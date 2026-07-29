@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>故事柑仔店──每天日落的魔幻時刻，為你說一個故事｜故事柑仔店</title>
+<meta name="description" content="每天日落的魔幻時刻，為你說一個故事。">
+<meta property="og:title" content="故事柑仔店──每天日落的魔幻時刻，為你說一個故事｜故事柑仔店"><meta property="og:description" content="每天日落的魔幻時刻，為你說一個故事。"><meta property="og:image" content="img/hero_store.jpg">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/site.js"></script>
+</head>
+<body>
+<nav class="topnav"><div class="wrap">
+<a class="logo" href="index.html">故事<b>柑仔店</b></a>
+<div class="nl-box"><a class="nl on" href="index.html">店門口</a><a class="nl" href="yoyo.html">長篇溜溜球</a><a class="nl" href="paopao.html">短篇泡泡糖</a><a class="nl" href="jianggu.html">老闆講古</a><a class="nl" href="suisui.html">老闆碎碎念</a><a class="nl" href="bao.html">語巫故事報</a><a class="nl" href="culture.html">文化紀錄</a><a class="nl" href="books.html">出版品</a></div>
+<div class="nav-act"><a class="iconbtn" href="search.html" title="找故事">🔍</a><button class="iconbtn" id="themeBtn" onclick="toggleTheme()" title="開燈／打烊">🌙</button></div>
+</div></nav>
+<header class="hero">
+<div>
+<div class="eyebrow">LIFE IS A STORY</div>
+<h1>每天日落的魔幻時刻，<br>為你說一個故事。</h1>
+<p class="lede">太陽緩緩下沉，巷仔口浮現一塊柑仔店招牌。這裡專營「人」「神」「鬼」「妖」四類故事——474 個故事瓶陳列在貨架上，人客來喔。</p>
+<div class="hero-cta"><a class="btn" href="paopao.html">走進店裡</a><a class="btn ghost" href="yoyo.html">追長篇連載</a></div>
+</div>
+<div class="hero-art"><img src="img/hero_store.jpg" alt="故事柑仔店水彩店面" fetchpriority="high"></div>
+</header>
+<div class="contbar" id="contbar"><div class="box"><span>📖 上次讀到：<b id="contT"></b></span><a class="btn sm" id="contA" href="#">繼續讀</a></div></div>
+<section class="daily"><div class="box">
+<div style="flex:1;min-width:250px"><div class="tag">今日一則．店長抽的</div><h3 id="dailyT">拔一支故事籤……</h3><p id="dailyE"></p></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn" id="dailyA" href="#">讀這一瓶</a><button class="btn ghost" id="dailyR">換一瓶</button></div>
+</div></section>
+<div class="sec-title"><h2>貨架分區</h2><span>SHELVES</span></div>
+<div class="tiles"><a class="tile" href="yoyo.html"><h3>長篇溜溜球</h3><p>引渡人日記、玄墨行者，一放一收欲罷不能</p><span class="n">126 瓶</span></a><a class="tile" href="paopao.html#ang"><h3>人物ㄤ仔標</h3><p>人世間的悲歡喜樂，一枚一枚收集</p><span class="n">109 瓶</span></a><a class="tile" href="paopao.html#shen"><h3>神明集郵冊</h3><p>一尊一尊collect起來的神明故事</p><span class="n">45 瓶</span></a><a class="tile" href="paopao.html#hun"><h3>幽魂綿綿冰</h3><p>沁涼入骨的鬼與地府故事</p><span class="n">50 瓶</span></a><a class="tile" href="paopao.html#yao"><h3>妖怪作業簿</h3><p>純妖怪的生態觀察簿</p><span class="n">31 瓶</span></a><a class="tile" href="jianggu.html"><h3>老闆講古</h3><p>先秦諸子與上古神話的另類講堂</p><span class="n">25 瓶</span></a><a class="tile" href="suisui.html"><h3>老闆碎碎念</h3><p>打烊前的深夜隨筆</p><span class="n">34 瓶</span></a><a class="tile" href="bao.html"><h3>語巫故事報</h3><p>每週日傍晚出刊的店內週報</p><span class="n">33 瓶</span></a><a class="tile" href="culture.html"><h3>地方文化紀錄</h3><p>百年中藥行探訪與田野紀錄</p><span class="n">12 瓶</span></a></div>
+<div class="sec-title" id="wizards"><h2>店裡的語巫</h2><span>THE SPEAK WIZARDS</span></div>
+<div class="wizards"><div class="wizard"><img src="img/wizards/laoban.jpg" alt="老闆插畫" loading="lazy"><div class="inner"><div class="role">賣語者</div><h3><a href="story/s026.html">老闆</a></h3><p>肚子微凸卻滿腹經綸的中年大叔，碎碎念與講古專欄主筆。</p></div></div><div class="wizard"><img src="img/wizards/laobanniang.jpg" alt="老闆娘插畫" loading="lazy"><div class="inner"><div class="role">搶語者</div><h3><a href="story/s018.html">老闆娘</a></h3><p>柑仔店背後看不見的那隻手，說一老闆絕不敢說二。</p></div></div><div class="wizard"><img src="img/wizards/xiaoer.jpg" alt="店小二插畫" loading="lazy"><div class="inner"><div class="role">換語者</div><h3><a href="story/s020.html">店小二</a></h3><p>長相清秀、打扮中性的打雜擔當，替小店整理貨架。</p></div></div><div class="wizard"><img src="img/wizards/heimao.jpg" alt="黑貓插畫" loading="lazy"><div class="inner"><div class="role">取語者</div><h3><a href="story/s022.html">黑貓</a></h3><p>蹲在舊行李箱上的一團黑毛，收故事，也常迷路。</p></div></div><div class="wizard"><img src="img/wizards/jianliu.jpg" alt="剪溜插畫" loading="lazy"><div class="inner"><div class="role">偷語者</div><h3><a href="story/s024.html">剪溜</a></h3><p>外派小偷，專偷人鬼故事，《引渡人日記》當事鬼。</p></div></div></div>
+<div class="sec-title"><h2>柑仔店出的書</h2><span>BOOKS</span></div>
+<div class="bookstrip"><a href="books.html"><img src="img/books/book1.jpg" alt=""><div><h4>故事柑仔店</h4><span>松鼠文化</span></div></a><a href="books.html"><img src="img/books/book2.jpg" alt=""><div><h4>故事柑仔店 2──被偷的父親</h4><span>松鼠文化</span></div></a><a href="books.html"><img src="img/books/book3.jpg" alt=""><div><h4>百年藥櫃九帖湯</h4><span>文化部中小學生讀物選介</span></div></a></div>
+<script src="data/index.js"></script><script>
+function seed(){var d=new Date();return d.getFullYear()*372+(d.getMonth()+1)*31+d.getDate();}
+function pick(n){var p=POSTS[n%POSTS.length];
+ document.getElementById('dailyT').textContent='〈'+p.t+'〉'+(p.g?('　#'+p.g):'');
+ document.getElementById('dailyE').textContent=p.ex?(p.ex+'……'):'';
+ document.getElementById('dailyA').href=p.u;}
+pick(seed());
+document.getElementById('dailyR').onclick=function(){pick(Math.floor(Math.random()*POSTS.length))};
+try{var m=JSON.parse(localStorage.getItem('lastread')||'{}');
+ if(m._last){document.getElementById('contbar').style.display='block';
+  document.getElementById('contT').textContent=m._last.t;
+  document.getElementById('contA').href=m._last.u;}}catch(e){}
+</script>
+<footer><div class="wrap">
+<div><div class="mark">故事柑仔店</div><div>語屋文創工作室　·　2017 年開店，重新開張中</div></div>
+<div><a href="series.html">系列總覽</a>　·　<a href="guestbook.html">顧客留言板</a>　·　<a href="history.html">店史資料室</a><br>月亮已經悄悄升起，在來不及暗去的天空，與夕陽平行搖晃著。</div>
+</div></footer>
+</body></html>

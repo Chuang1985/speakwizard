@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>長篇溜溜球｜故事柑仔店</title>
+<meta name="description" content="每天日落的魔幻時刻，為你說一個故事。">
+<meta property="og:title" content="長篇溜溜球｜故事柑仔店"><meta property="og:description" content="每天日落的魔幻時刻，為你說一個故事。"><meta property="og:image" content="img/hero_store.jpg">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/site.js"></script>
+</head>
+<body>
+<nav class="topnav"><div class="wrap">
+<a class="logo" href="index.html">故事<b>柑仔店</b></a>
+<div class="nl-box"><a class="nl" href="index.html">店門口</a><a class="nl on" href="yoyo.html">長篇溜溜球</a><a class="nl" href="paopao.html">短篇泡泡糖</a><a class="nl" href="jianggu.html">老闆講古</a><a class="nl" href="suisui.html">老闆碎碎念</a><a class="nl" href="bao.html">語巫故事報</a><a class="nl" href="culture.html">文化紀錄</a><a class="nl" href="books.html">出版品</a></div>
+<div class="nav-act"><a class="iconbtn" href="search.html" title="找故事">🔍</a><button class="iconbtn" id="themeBtn" onclick="toggleTheme()" title="開燈／打烊">🌙</button></div>
+</div></nav>
+<div class="page-head"><h1>長篇溜溜球</h1><p class="desc">一放一收、欲罷不能的長篇連載。網站會記住你讀到哪一回，隨時回來接著讀。</p></div>
+<div class="serial-cards">
+<div class="scard"><img src="img/fb/856903214700212.jpg" alt="" loading="lazy"><div class="inner">
+<h3>引渡人日記</h3><p>偷語者剪溜的地府打工實錄——菜鳥引渡人從 day 1 到終篇，全 93 回。</p>
+<div class="row"><a class="btn sm" href="yindu.html">回目錄</a><a class="btn ghost sm" href="ji_yindu_1.html">合訂本</a><a class="btn ghost sm" id="contYin" href="story/s356.html">從第一回讀起</a></div></div></div>
+<div class="scard"><img src="img/xuanmo/玄墨行者.jpg" alt="" loading="lazy"><div class="inner">
+<h3>玄墨行者．學道</h3><p>臺灣風土的玄幻水墨連載，每回配當回畫作，全 28 回。</p>
+<div class="row"><a class="btn sm" href="xuanmo.html">回目錄與畫廊</a><a class="btn ghost sm" href="ji_xuanmo.html">合訂本</a><a class="btn ghost sm" id="contXu" href="story/s454.html">從第一回讀起</a></div></div></div>
+</div>
+<div class="list-sec">
+<h2>靈行者<small>序章試閱</small></h2><ul class="story-list"><li><a href="story/s162.html"><img class="li-th" src="img/brand/brand_442326811238248_jpg.jpg" loading="lazy" alt=""><span class="li-t">靈行者</span><span class="dt">2018-01-09</span></a></li></ul>
+<h2>其他長篇<small></small></h2><ul class="story-list"><li><a href="story/s017.html"><img class="li-th" src="img/fb/586717901718746.jpg" loading="lazy" alt=""><span class="li-t">Opening</span><span class="dt">2017-09-04</span></a></li><li><a href="story/s451.html"><img class="li-th" src="img/fb/1011377435919455.jpg" loading="lazy" alt=""><span class="li-t">白無常日記 day 151 人間善惡都曾造</span><span class="dt">2019-04-26</span></a></li></ul>
+</div>
+<script>
+try{var m=JSON.parse(localStorage.getItem('lastread')||'{}');
+if(m.yindu){var a=document.getElementById('contYin');a.textContent='續讀：'+m.yindu.t.slice(0,14)+'…';a.href='../'.repeat(0)+m.yindu.u;}
+if(m.xuanmo){var b=document.getElementById('contXu');b.textContent='續讀：'+m.xuanmo.t.slice(0,14)+'…';b.href=m.xuanmo.u;}}catch(e){}
+</script>
+<footer><div class="wrap">
+<div><div class="mark">故事柑仔店</div><div>語屋文創工作室　·　2017 年開店，重新開張中</div></div>
+<div><a href="series.html">系列總覽</a>　·　<a href="guestbook.html">顧客留言板</a>　·　<a href="history.html">店史資料室</a><br>月亮已經悄悄升起，在來不及暗去的天空，與夕陽平行搖晃著。</div>
+</div></footer>
+</body></html>

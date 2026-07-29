@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>找故事｜故事柑仔店</title>
+<meta name="description" content="每天日落的魔幻時刻，為你說一個故事。">
+<meta property="og:title" content="找故事｜故事柑仔店"><meta property="og:description" content="每天日落的魔幻時刻，為你說一個故事。"><meta property="og:image" content="img/hero_store.jpg">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/site.js"></script>
+</head>
+<body>
+<nav class="topnav"><div class="wrap">
+<a class="logo" href="index.html">故事<b>柑仔店</b></a>
+<div class="nl-box"><a class="nl" href="index.html">店門口</a><a class="nl" href="yoyo.html">長篇溜溜球</a><a class="nl" href="paopao.html">短篇泡泡糖</a><a class="nl" href="jianggu.html">老闆講古</a><a class="nl" href="suisui.html">老闆碎碎念</a><a class="nl" href="bao.html">語巫故事報</a><a class="nl" href="culture.html">文化紀錄</a><a class="nl" href="books.html">出版品</a></div>
+<div class="nav-act"><a class="iconbtn" href="search.html" title="找故事">🔍</a><button class="iconbtn" id="themeBtn" onclick="toggleTheme()" title="開燈／打烊">🌙</button></div>
+</div></nav>
+<div class="page-head"><h1>找故事</h1><p class="desc">全店故事瓶都能撈——關鍵字搜到內文，分類、系列、語巫可交叉篩選。想按產品線逛，請看<a href="series.html" style="color:var(--acc)">系列總覽</a>。</p></div>
+<div class="toolbar">
+<input id="q" type="search" placeholder="搜尋故事（含全文）…" aria-label="搜尋故事">
+<select id="catSel"><option value="">全部分類</option></select>
+<select id="seriesSel"><option value="">全部系列</option></select>
+</div>
+<div class="chips" id="chips"></div>
+<div class="meta-line"><span id="count"></span><button class="sortbtn" id="sortBtn">排序：由舊到新</button></div>
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" style="display:none">貨架上找不到這個故事——換個關鍵字試試。</div>
+<a class="btn ghost more" id="moreBtn">再上架三十瓶</a><script src="data/index.js"></script><script>
+const CATS=['長篇溜溜球','人物ㄤ仔標','神明集郵冊','幽魂綿綿冰','妖怪作業簿','短篇泡泡糖','老闆講古','老闆碎碎念','語巫故事報','地方文化紀錄'];
+const WHO=['老闆','老闆娘','小二','黑貓','剪溜','默安'];
+let state={cat:'',who:new Set(),series:'',q:'',asc:true,shown:30};
+const qs=new URLSearchParams(location.search);
+if(qs.get('cat'))state.cat=qs.get('cat');
+if(qs.get('series'))state.series=qs.get('series');
+if(qs.get('who'))state.who.add(qs.get('who'));
+if(qs.get('q'))state.q=qs.get('q');
+const catSel=document.getElementById('catSel');
+CATS.forEach(c=>{var o=document.createElement('option');o.value=c;o.textContent=c;catSel.appendChild(o);});
+catSel.value=state.cat;
+const sc={};POSTS.forEach(p=>{if(p.g)sc[p.g]=(sc[p.g]||0)+1});
+const seriesSel=document.getElementById('seriesSel');
+Object.entries(sc).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{if(c<2)return;var o=document.createElement('option');o.value=t;o.textContent=t+'（'+c+'）';seriesSel.appendChild(o);});
+seriesSel.value=state.series;
+const chips=document.getElementById('chips');
+WHO.forEach(w=>{var b=document.createElement('button');b.className='chip'+(state.who.has(w)?' on':'');b.textContent=w;
+ b.onclick=()=>{state.who.has(w)?state.who.delete(w):state.who.add(w);b.classList.toggle('on');state.shown=30;render();};chips.appendChild(b);});
+document.getElementById('q').value=state.q;
+var FT=null,FTL=false;
+function loadFT(){if(FT||FTL)return;FTL=true;var s=document.createElement('script');s.src='data/fulltext.js';s.onload=()=>{FT=FULLTEXT;render();};document.body.appendChild(s);}
+document.getElementById('q').oninput=e=>{state.q=e.target.value.trim();state.shown=30;if(state.q.length>=2)loadFT();render();};
+catSel.onchange=()=>{state.cat=catSel.value;state.shown=30;render();};
+seriesSel.onchange=()=>{state.series=seriesSel.value;state.shown=30;render();};
+document.getElementById('sortBtn').onclick=function(){state.asc=!state.asc;this.textContent='排序：'+(state.asc?'由舊到新':'由新到舊');render();};
+document.getElementById('moreBtn').onclick=()=>{state.shown+=30;render(true);};
+function filt(){let r=POSTS.slice();
+ if(state.cat)r=r.filter(p=>p.cats.includes(state.cat));
+ if(state.series)r=r.filter(p=>p.g===state.series);
+ if(state.who.size)r=r.filter(p=>[...state.who].every(w=>p.a.includes(w)));
+ if(state.q){if(FT){var hit=new Set();FT.forEach(x=>{if(x.t.includes(state.q)||x.b.includes(state.q))hit.add(x.id);});r=r.filter(p=>hit.has(p.id));}
+  else r=r.filter(p=>p.t.includes(state.q)||p.ex.includes(state.q)||(p.g&&p.g.includes(state.q)));}
+ r.sort((a,b)=>state.asc?(a.d||'').localeCompare(b.d||'')||a.id-b.id:(b.d||'').localeCompare(a.d||'')||b.id-a.id);
+ return r;}
+const grid=document.getElementById('grid');
+function card(p){var el=document.createElement('a');el.className='card';el.href=p.u;
+ var th=p.th?'<img class="thumb" loading="lazy" src="'+p.th+'" alt="">':'';
+ el.innerHTML=th+'<div class="inner"><div class="top"><span class="badge">'+p.cat+'</span><span>'+(p.d||'')+'</span></div><h3>'+p.t+'</h3><p class="peek">'+p.ex+'</p><div class="who">'+(p.g?('#'+p.g+'　'):'')+(p.a.length?('語巫：'+p.a.join('、')):'')+'</div></div>';
+ return el;}
+let current=[];
+function render(append){current=filt();
+ document.getElementById('count').textContent='撈到 '+current.length+' 瓶';
+ var slice=current.slice(0,state.shown);
+ if(!append)grid.innerHTML='';
+ var start=append?grid.children.length:0;
+ slice.slice(start).forEach(p=>grid.appendChild(card(p)));
+ document.getElementById('empty').style.display=current.length?'none':'block';
+ document.getElementById('moreBtn').style.display=current.length>state.shown?'block':'none';}
+if(state.q.length>=2)loadFT();
+render();
+</script>
+<footer><div class="wrap">
+<div><div class="mark">故事柑仔店</div><div>語屋文創工作室　·　2017 年開店，重新開張中</div></div>
+<div><a href="series.html">系列總覽</a>　·　<a href="guestbook.html">顧客留言板</a>　·　<a href="history.html">店史資料室</a><br>月亮已經悄悄升起，在來不及暗去的天空，與夕陽平行搖晃著。</div>
+</div></footer>
+</body></html>
