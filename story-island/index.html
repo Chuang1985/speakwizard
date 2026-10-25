@@ -89,6 +89,79 @@ body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var
 .blds button { text-align: left; font: 500 13px var(--body); border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 6px; padding: 7px 9px; cursor: pointer; display: flex; justify-content: space-between; gap: 6px; }
 .blds button small { color: var(--muted); font-variant-numeric: tabular-nums; }
 .blds button:hover { border-color: var(--red); }
+/* 島名招牌：恆亮的雙層燈管邊框，慢慢呼吸明暗；下緣一條小字燈管寫篇數 */
+.zone-sign {
+  --nc: #fff0c8;
+  pointer-events: auto; cursor: pointer; white-space: nowrap;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 6px 14px 5px; border-radius: 9px;
+  background: rgba(12, 8, 22, .72);
+  border: 2px solid var(--nc);
+  outline: 2px solid color-mix(in srgb, var(--nc) 55%, transparent); outline-offset: 3px;
+  box-shadow: 0 0 8px var(--nc), 0 0 18px color-mix(in srgb, var(--nc) 50%, transparent), inset 0 0 8px color-mix(in srgb, var(--nc) 40%, transparent);
+  color: #fffaf0;
+  animation: sign-breathe 4.5s ease-in-out infinite;
+}
+.zone-sign b { font: 700 17px var(--display); letter-spacing: .1em; text-shadow: 0 0 3px var(--nc), 0 0 10px var(--nc), 0 0 18px var(--nc); }
+.zone-sign small { font: 600 10px var(--body); letter-spacing: .14em; color: color-mix(in srgb, var(--nc) 75%, #fff); text-shadow: 0 0 6px var(--nc); }
+.zone-sign:hover { background: rgba(12, 8, 22, .9); }
+.zone-sign.sub { padding: 3px 10px 3px; outline: none; border-width: 1.5px; animation-duration: 6s; }
+.zone-sign.sub b { font-size: 13px; }
+.zone-sign.sub small { font-size: 9px; }
+@keyframes sign-breathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
+
+/* 標題霓虹：柑仔店招牌的暖橘紅燈管，「店」字像接觸不良，偶爾自己閃一下 */
+.neon-title {
+  display: inline-block; margin: 0; padding: 4px 16px 6px; border-radius: 10px;
+  font: 700 clamp(22px, 3.4vw, 32px) var(--display); letter-spacing: .14em; color: #fff4e6;
+  background: rgba(12, 8, 22, .62); border: 2px solid #ff7a4a; outline: 2px solid rgba(255, 122, 74, .45); outline-offset: 3px;
+  text-shadow: 0 0 3px #ff7a4a, 0 0 10px #ff6a3a, 0 0 22px #ff5a2a;
+  box-shadow: 0 0 10px rgba(255, 106, 58, .8), 0 0 26px rgba(255, 90, 42, .45), inset 0 0 10px rgba(255, 106, 58, .4);
+}
+.neon-title .flick { animation: bad-tube 7s linear infinite; }
+@keyframes bad-tube {
+  0%, 82%, 100% { opacity: 1; text-shadow: inherit; }
+  84% { opacity: .25; text-shadow: none; } 86% { opacity: 1; } 88% { opacity: .35; text-shadow: none; } 91% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .neon-title .flick, .zone-sign { animation: none; } }
+
+/* 霓虹招牌：建築上方亮起的故事篇名。--nc 是各區的霓虹色 */
+.neon {
+  --nc: #fff0c8;
+  pointer-events: auto; cursor: pointer; white-space: nowrap;
+  font: 700 15px var(--display); letter-spacing: .06em; color: #fffaf0;
+  padding: 4px 11px 5px; border: 2px solid var(--nc); border-radius: 7px;
+  background: rgba(12, 8, 22, .58);
+  text-shadow: 0 0 3px var(--nc), 0 0 9px var(--nc), 0 0 16px var(--nc);
+  box-shadow: 0 0 6px var(--nc), 0 0 14px color-mix(in srgb, var(--nc) 55%, transparent), inset 0 0 6px color-mix(in srgb, var(--nc) 45%, transparent);
+  opacity: 0;
+}
+.neon::after { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 10px; margin-left: -1px; background: color-mix(in srgb, var(--nc) 70%, transparent); }
+.neon.on { animation: neon-flicker 3.8s linear forwards; }
+.neon:hover { background: rgba(12, 8, 22, .82); }
+/* 像霓虹燈剛通電：啪、啪閃兩下才穩定，最後慢慢熄（一秒內最多閃兩下） */
+@keyframes neon-flicker {
+  0% { opacity: 0; } 5% { opacity: 1; } 9% { opacity: .2; } 14% { opacity: 1; } 18% { opacity: .35; } 24% { opacity: 1; }
+  82% { opacity: 1; } 100% { opacity: 0; }
+}
+@keyframes neon-fade { 0% { opacity: 0; } 12% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .neon.on { animation-name: neon-fade; } }
+
+/* 第一次進來的小說明卡 */
+#guide { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: rgba(12, 8, 22, .45); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.guide-card { width: min(360px, 100%); background: var(--paper); color: var(--ink); border-radius: 12px; overflow: hidden; box-shadow: 0 18px 40px rgba(0,0,0,.45); }
+.guide-card::before { content: ""; display: block; height: 8px; background: repeating-linear-gradient(90deg, var(--red) 0 18px, var(--paper) 18px 36px); }
+.guide-body { padding: 18px 20px 20px; display: grid; gap: 12px; }
+.guide-body h2 { margin: 0; font: 700 24px var(--display); letter-spacing: .06em; }
+.guide-body ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.guide-body li { display: grid; grid-template-columns: 30px 1fr; gap: 8px; align-items: start; font-size: 14px; line-height: 1.65; color: #4a3d30; }
+.guide-body li .ic { width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; font: 700 13px var(--display); }
+.ic.neon-ic { color: #fffaf0; background: #1d1830; border: 2px solid #ff7ab8; text-shadow: 0 0 4px #ff7ab8; }
+.ic.house-ic { background: #f2e2bf; color: var(--red); }
+.ic.hand-ic { background: #e4e8f0; color: #3d4f6e; }
+.guide-body .btn { justify-self: end; }
+.help { width: 34px; height: 34px; border-radius: 50%; font: 700 15px var(--display); color: var(--paper); background: rgba(20,16,32,.6); border: 1px solid rgba(255,240,210,.35); cursor: pointer; backdrop-filter: blur(6px); }
+.help:hover { border-color: var(--orange); }
 .bubble { font: 500 12px var(--body); color: var(--ink); background: #fff; border-radius: 10px; padding: 5px 10px; max-width: 180px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,.3); position: relative; pointer-events: none; }
 .bubble::after { content: ""; position: absolute; left: 50%; bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: #fff; }
 .zone-tag:focus-visible, .agent-tag:focus-visible, .chip:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
@@ -136,22 +209,63 @@ body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var
 #loading { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; background: var(--dusk); font: 700 20px var(--display); letter-spacing: .1em; transition: opacity .6s; }
 #loading.done { opacity: 0; pointer-events: none; }
 
-.mobile-selects { display: none; }
-.sel { display: flex; align-items: center; gap: 4px; background: rgba(20,16,32,.6); border: 1px solid rgba(255,240,210,.25); border-radius: 999px; padding: 2px 4px 2px 10px; backdrop-filter: blur(6px); }
-.sel span { font: 500 11px var(--body); opacity: .75; }
-.sel select { font: 600 13px var(--body); color: var(--paper); background: transparent; border: 0; padding: 5px 4px; min-height: 30px; }
-.sel select option { color: var(--ink); background: var(--paper); }
+/* 全島搜尋 */
+.finder { position: relative; flex: 0 1 300px; margin-left: auto; }
+.finder input { width: 100%; box-sizing: border-box; font: 500 14px var(--body); color: var(--paper); background: rgba(20,16,32,.62); border: 1px solid rgba(255,240,210,.3); border-radius: 999px; padding: 8px 14px 8px 34px; backdrop-filter: blur(6px); }
+.finder input::placeholder { color: rgba(251,241,220,.6); }
+.finder input:focus { outline: none; border-color: var(--orange); }
+.find-ic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: rgba(251,241,220,.7); pointer-events: none; }
+.find-list { position: absolute; top: calc(100% + 6px); left: 0; right: 0; margin: 0; padding: 6px; list-style: none; background: var(--paper); color: var(--ink); border-radius: 10px; box-shadow: 0 14px 34px rgba(0,0,0,.45); max-height: min(60vh, 420px); overflow-y: auto; z-index: 10; }
+.find-list li { display: grid; gap: 1px; padding: 7px 10px; border-radius: 6px; cursor: pointer; }
+.find-list li[aria-selected="true"], .find-list li:hover { background: #f3e4c4; }
+.find-list .ft { font-size: 14px; line-height: 1.45; }
+.find-list .ft mark { background: rgba(242,154,62,.35); color: inherit; border-radius: 2px; }
+.find-list .fs { font-size: 11px; color: var(--muted); }
+.find-list .empty { color: var(--muted); font-size: 13px; cursor: default; }
+/* 氛圍按鈕與彈出選單 */
+.mood { position: relative; }
+.mood-btn { display: flex; align-items: center; gap: 6px; font: 600 13px var(--body); color: var(--paper); background: rgba(20,16,32,.6); border: 1px solid rgba(255,240,210,.3); border-radius: 999px; padding: 7px 13px; cursor: pointer; backdrop-filter: blur(6px); }
+.mood-btn[aria-expanded="true"], .mood-btn:hover { border-color: var(--orange); }
+.mood-pop { position: absolute; right: 0; top: calc(100% + 8px); display: grid; gap: 10px; padding: 12px; background: rgba(20,16,32,.88); border: 1px solid rgba(255,240,210,.25); border-radius: 12px; box-shadow: 0 14px 34px rgba(0,0,0,.4); backdrop-filter: blur(8px); z-index: 10; }
+.mood-row { display: grid; gap: 6px; }
+.mood-row > span { font: 600 11px var(--body); letter-spacing: .12em; color: rgba(251,241,220,.65); }
+.mood-pop .daybox { background: rgba(255,255,255,.06); }
+/* 卡片裡可收合的區塊 */
+.p-fold { border-top: 1px dashed var(--line); padding-top: 10px; }
+.p-fold > summary { cursor: pointer; list-style: none; font: 700 13px var(--body); letter-spacing: .12em; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+.p-fold > summary::-webkit-details-marker { display: none; }
+.p-fold > summary::after { content: "展開 ▾"; font-weight: 500; letter-spacing: 0; color: var(--red); font-size: 12px; }
+.p-fold[open] > summary::after { content: "收起 ▴"; }
+.p-fold[open] > summary { margin-bottom: 8px; }
+.picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.picks a { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); text-decoration: none; }
+.picks a:hover { border-color: var(--red); }
+.picks .tag { font: 700 10px var(--body); letter-spacing: .1em; color: #fff; background: var(--red); border-radius: 3px; padding: 2px 5px; }
+.picks .tag.rand { background: var(--orange); color: var(--ink); }
+.picks .t { font-size: 14px; line-height: 1.5; }
+.picks .g { grid-column: 2; font-size: 11px; color: var(--muted); }
 
 /* 手機：頂列只留標題、俯瞰小圖示、兩個下拉選單；卡片改成底部抽屜 */
 @media (max-width: 720px) {
   .bar { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding-top: calc(env(safe-area-inset-top, 0px) + 10px); }
-  .brand h1 { font-size: 21px; }
+  .brand .neon-title { font-size: 18px; padding: 3px 10px 4px; letter-spacing: .1em; }
+  .zone-sign { padding: 4px 9px 3px; outline-offset: 2px; }
+  .zone-sign b { font-size: 13px; }
+  .zone-sign small { font-size: 9px; }
+  .zone-sign.sub b { font-size: 11px; }
   .brand p { display: none; }
   .tools { display: contents; }
-  .overview { grid-column: 2; grid-row: 1; padding: 7px 9px; }
+  .bar { grid-template-columns: 1fr auto auto auto; }
+  .help { grid-column: 2; grid-row: 1; }
+  .overview { grid-column: 3; grid-row: 1; padding: 7px 9px; }
+  .mood { grid-column: 4; grid-row: 1; }
+  .mood-btn { padding: 8px 9px; }
+  .mood-text { display: none; }
+  .finder { grid-column: 1 / -1; grid-row: 2; margin-left: 0; }
+  .finder input { font-size: 16px; padding: 7px 12px 7px 32px; } /* 16px 以上，iPhone 點進去才不會自動放大 */
+  .daybox button { padding: 6px 9px; }
+  .neon { font-size: 12px; padding: 3px 8px 4px; }
   .ov-text { display: none; }
-  .daybox { display: none; }
-  .mobile-selects { display: flex; gap: 6px; grid-column: 1 / -1; grid-row: 2; }
   #panel { top: auto; left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); width: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 58px); max-height: 52%; }
   .p-head { padding: 12px 14px 10px; }
   .p-head h2 { font-size: 21px; }
@@ -181,40 +295,63 @@ body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var
   <div id="stage"></div>
   <header class="bar">
     <div class="brand">
-      <h1>故事柑仔店島</h1>
-      <p>日落之後，語巫們在九座貨架島之間走動</p>
+      <h1 class="neon-title">故事柑仔<span class="flick">店</span>島</h1>
+    </div>
+    <!-- 全島搜尋：打篇名或人物名，點結果直接飛過去 -->
+    <div class="finder" id="finder">
+      <svg class="find-ic" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="findQ" type="search" placeholder="找故事：篇名、人物…" aria-label="找故事" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="findList">
+      <ul id="findList" class="find-list" role="listbox" hidden></ul>
     </div>
     <div class="tools">
+    <button class="help" type="button" id="helpBtn" title="怎麼逛這座島" aria-label="怎麼逛這座島">?</button>
     <button class="overview" type="button" id="overviewBtn" title="回到全島俯瞰（快捷鍵 H）" aria-label="回到全島俯瞰">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3 21 8v8l-9 5-9-5V8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 8v8M8 10l4 2 4-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <span class="ov-text">全島俯瞰</span>
     </button>
-    <!-- 手機版：時間與天氣改用下拉選單，省空間 -->
-    <div class="mobile-selects">
-      <label class="sel"><span>時間</span><select id="daySel" aria-label="時間">
-        <option value="auto">日夜流轉</option><option value="sunset">日落</option><option value="night">入夜</option>
-      </select></label>
-      <label class="sel"><span>天氣</span><select id="weatherSel" aria-label="天氣">
-        <option value="auto">自動</option><option value="clear">晴</option><option value="cloudy">多雲</option><option value="rain">下雨</option><option value="fog">起霧</option>
-      </select></label>
-    </div>
-    <div class="daybox" role="group" aria-label="時間">
-      <button type="button" data-day="auto" aria-pressed="true">日夜流轉</button>
-      <button type="button" data-day="sunset" aria-pressed="false">日落</button>
-      <button type="button" data-day="night" aria-pressed="false">入夜</button>
-    </div>
-    <div class="daybox" role="group" aria-label="天氣" id="weatherBox">
-      <button type="button" data-weather="auto" aria-pressed="true">天氣自動</button>
-      <button type="button" data-weather="clear" aria-pressed="false">晴</button>
-      <button type="button" data-weather="cloudy" aria-pressed="false">多雲</button>
-      <button type="button" data-weather="rain" aria-pressed="false">下雨</button>
-      <button type="button" data-weather="fog" aria-pressed="false">起霧</button>
+    <!-- 氛圍：時間與天氣收在這裡，不搶頂列 -->
+    <div class="mood">
+      <button class="mood-btn" type="button" id="moodBtn" aria-expanded="false" aria-controls="moodPop" title="時間與天氣">
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span class="mood-text">氛圍</span>
+      </button>
+      <div class="mood-pop" id="moodPop" hidden>
+        <div class="mood-row"><span>時間</span>
+          <div class="daybox" role="group" aria-label="時間">
+            <button type="button" data-day="auto" aria-pressed="true">日夜流轉</button>
+            <button type="button" data-day="sunset" aria-pressed="false">日落</button>
+            <button type="button" data-day="night" aria-pressed="false">入夜</button>
+          </div>
+        </div>
+        <div class="mood-row"><span>天氣</span>
+          <div class="daybox" role="group" aria-label="天氣">
+            <button type="button" data-weather="auto" aria-pressed="true">自動</button>
+            <button type="button" data-weather="clear" aria-pressed="false">晴</button>
+            <button type="button" data-weather="cloudy" aria-pressed="false">多雲</button>
+            <button type="button" data-weather="rain" aria-pressed="false">下雨</button>
+            <button type="button" data-weather="fog" aria-pressed="false">起霧</button>
+          </div>
+        </div>
+      </div>
     </div>
     </div>
   </header>
   <aside id="panel" hidden aria-live="polite"></aside>
   <div id="hint">拖曳旋轉　滾輪縮放　點島嶼、語巫或柑仔店</div>
   <nav class="zonebar" aria-label="分區"><div class="scroll" id="chips"></div></nav>
+  <div id="guide" hidden role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <div class="guide-card">
+      <div class="guide-body">
+        <h2 id="guideTitle">人客來喔！</h2>
+        <ul>
+          <li><span class="ic neon-ic">光</span><span>房子上面亮起來的<b>霓虹招牌</b>，寫的是故事的篇名，點下去就能讀那一篇。</span></li>
+          <li><span class="ic house-ic">屋</span><span>點<b>房子</b>，看這一棟收著的所有故事；點路上走來走去的人，聽他們的故事。</span></li>
+          <li><span class="ic hand-ic">手</span><span id="guideHand">拖曳轉動畫面，滾輪縮放；右上角的「全島俯瞰」隨時帶你回到高處。</span></li>
+        </ul>
+        <button class="btn" type="button" id="guideOk">知道了，進店逛逛</button>
+      </div>
+    </div>
+  </div>
   <div id="loading">柑仔店正在開門……</div>
 </div>
 
@@ -279,13 +416,22 @@ const ui = {
     open(head(z.parent ? `${z.parent}・區塊` : z.main ? `貨架分區・總建築 ${z.main.name}` : "貨架分區", z.name, z.main ? `${z.tagline}。${z.main.desc}` : z.tagline,
       `<div class="p-meta"><span><b>${z.posts.length}</b> 瓶故事</span><a href="${link(z.page)}" target="_blank" rel="noopener" style="color:var(--red)">到這一區的貨架 ↗</a></div>`) +
       `<div class="p-body">
+        <section class="p-sec"><h3>先讀這幾篇</h3><ul class="picks" id="picks"></ul></section>
         ${z.sectors ? `<section class="p-sec"><h3>區塊</h3><div class="blds" id="secs"></div></section>` : ""}
-        ${z.buildings?.length ? `<section class="p-sec"><h3>${z.layout?.plan === "spiral" ? "地府旅程・依序走" : "這一區的地標"}</h3><div class="blds" id="blds"></div></section>
-        <section class="p-sec" id="subsSec"><h3>街坊與路標</h3><div class="subs" id="subs"></div></section>` : ""}
-        <section class="p-sec"><h3>現在在這一區</h3><div class="people" id="here"></div></section>
-        <section class="p-sec"><h3>系列</h3><div class="series" id="series"></div></section>
-        <section class="p-sec"><h3>故事瓶</h3><input class="search" id="q" type="search" placeholder="搜尋這一區的故事" aria-label="搜尋這一區的故事"><div id="stories" style="margin-top:6px"></div></section>
+        <section class="p-sec" id="allSec"><h3>全部 ${z.posts.length} 篇故事</h3>
+          <input class="search" id="q" type="search" placeholder="在這一區找故事" aria-label="在這一區找故事">
+          <div class="series" id="series" style="margin-top:8px"></div>
+          <div id="stories" style="margin-top:6px"></div></section>
+        ${z.buildings?.length ? `<details class="p-fold" id="bldsSec"><summary>${z.layout?.plan === "spiral" ? "地府旅程・依序走" : "這一區的地標"}</summary><div class="blds" id="blds"></div></details>
+        <details class="p-fold" id="subsSec"><summary>街坊與路標</summary><div class="subs" id="subs"></div></details>` : ""}
+        <details class="p-fold"><summary>現在在這一區</summary><div class="people" id="here"></div></details>
       </div>`);
+    // 先讀這幾篇：最新一篇＋兩篇隨機，點了直接去讀
+    const pool = z.posts.slice(1);
+    const picks = [z.posts[0], ...pool.sort(() => Math.random() - 0.5).slice(0, 2)].filter(Boolean);
+    $("#picks", panel).innerHTML = picks.map((p, i) => `<li><a href="${link(p.u)}" target="_blank" rel="noopener">
+      <span class="tag ${i ? "rand" : ""}">${i ? "隨機" : "最新"}</span><span class="t">${esc(p.t)}</span>${p.g ? `<span class="g">${esc(p.g)}</span>` : ""}</a></li>`).join("")
+      || `<li class="none" style="font-size:13px;color:var(--muted)">這一區還沒有故事。</li>`;
     // 合併區：每個區塊一顆按鈕，點了飛過去並只看那一塊
     [...(z.sectors || []), ...(z.towers || [])].forEach((s) => {
       const b = document.createElement("button");
@@ -334,7 +480,11 @@ const ui = {
     let series = null;
     const seriesEl = $("#series", panel);
     const names = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    if (!names.length) seriesEl.closest(".p-sec").hidden = true;
+    if (!names.length) seriesEl.hidden = true;
+    // 收合區塊的標題後面標上數量，讓人知道裡面有多少
+    const bldCount = blds.filter((bd) => bd.tier === 1).length;
+    if ($("#bldsSec", panel)) $("#bldsSec summary", panel).insertAdjacentHTML("beforeend", ` <small style="font-weight:500;letter-spacing:0">（${bldCount}）</small>`);
+    if ($("#subsSec", panel) && streets.size) $("#subsSec summary", panel).insertAdjacentHTML("beforeend", ` <small style="font-weight:500;letter-spacing:0">（${blds.filter((bd) => bd.tier > 1).length}）</small>`);
     const draw = () => {
       const q = $("#q", panel).value.trim();
       storyList($("#stories", panel), z.posts.filter((p) => (!series || p.g === series) && (!q || (p.t + (p.ex || "")).includes(q))));
@@ -366,6 +516,19 @@ const ui = {
       </div>`);
     if (homeB) $("#goHome", panel).onclick = () => openBuilding(homeB);
     storyList($("#stories", panel), posts);
+  },
+  // 點霓虹招牌：只看這一篇，下面可以再看整棟
+  showPost(p, b, zone, { openBuilding }) {
+    const ex = (p.ex || "").trim();
+    open(head(`${zone.name}・${b.series || b.name}`, p.t, "",
+      `<div class="p-meta"><span>${esc(p.d || "")}</span>${p.g ? `<span>${esc(p.g)}</span>` : ""}</div>`) +
+      `<div class="p-body">
+        ${ex ? `<p style="margin:0;font-size:14px;line-height:1.8;color:#4a3d30">${esc(ex.slice(0, 140))}${ex.length > 140 ? "……" : ""}</p>` : ""}
+        <div class="actions"><a class="btn" href="${link(p.u)}" target="_blank" rel="noopener">讀這一篇 ↗</a>
+        ${b.posts.length > 1 ? `<button class="btn ghost" type="button" id="wholeB">看${esc(b.name.length > 10 ? "這一棟" : b.name)}全部 ${b.posts.length} 篇</button>` : ""}</div>
+      </div>`);
+    const whole = $("#wholeB", panel);
+    if (whole) whole.onclick = () => openBuilding(b);
   },
   showBuilding(b, zone, residents, { open: openAgent, openZone }) {
     open(head(`${zone.name}・${b.step ? `地府旅程第 ${b.step} 站` : b.series || "地標"}`, b.name, b.desc,
@@ -404,23 +567,59 @@ const ui = {
 
 document.querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", () => {
   document.querySelectorAll("[data-day]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-  $("#daySel").value = b.dataset.day;
   ui.onDayMode?.(b.dataset.day);
 }));
 document.querySelectorAll("[data-weather]").forEach((b) => b.addEventListener("click", () => {
   document.querySelectorAll("[data-weather]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-  $("#weatherSel").value = b.dataset.weather;
   ui.onWeather?.(b.dataset.weather);
 }));
-// 手機版的下拉選單，跟桌機的按鈕同步
-$("#daySel").addEventListener("change", (e) => {
-  document.querySelectorAll("[data-day]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.day === e.target.value)));
-  ui.onDayMode?.(e.target.value);
+// 氛圍彈出選單：點按鈕開關，點外面或按 Esc 收起來
+const moodBtn = $("#moodBtn"), moodPop = $("#moodPop");
+const setMood = (on) => { moodPop.hidden = !on; moodBtn.setAttribute("aria-expanded", String(on)); };
+moodBtn.onclick = (e) => { e.stopPropagation(); setMood(moodPop.hidden); };
+document.addEventListener("pointerdown", (e) => { if (!moodPop.hidden && !e.target.closest(".mood")) setMood(false); });
+addEventListener("keydown", (e) => e.key === "Escape" && !moodPop.hidden && setMood(false));
+
+// ---- 全島搜尋：打篇名、系列或人物名，選一個就飛過去 ----
+const findQ = $("#findQ"), findList = $("#findList");
+let findHits = [], findSel = -1;
+const markHit = (text, q) => {
+  const i = text.indexOf(q);
+  return i < 0 ? esc(text) : `${esc(text.slice(0, i))}<mark>${esc(q)}</mark>${esc(text.slice(i + q.length))}`;
+};
+function renderFind() {
+  const q = findQ.value.trim();
+  if (!q || !ui.api) { findList.hidden = true; findQ.setAttribute("aria-expanded", "false"); return; }
+  findHits = ui.api.find(q);
+  findSel = findHits.length ? 0 : -1;
+  findList.innerHTML = findHits.length
+    ? findHits.map((h, i) => `<li role="option" data-i="${i}" aria-selected="${i === findSel}"><span class="ft">${markHit(h.title, q)}</span><span class="fs">${esc(h.sub)}</span></li>`).join("")
+    : `<li class="empty">找不到「${esc(q)}」，換個關鍵字試試。</li>`;
+  findList.hidden = false;
+  findQ.setAttribute("aria-expanded", "true");
+}
+function pickFind(i) {
+  const h = findHits[i];
+  if (!h) return;
+  findList.hidden = true;
+  findQ.setAttribute("aria-expanded", "false");
+  findQ.blur();
+  h.go();
+}
+findQ.addEventListener("input", renderFind);
+findQ.addEventListener("focus", () => findQ.value.trim() && renderFind());
+findQ.addEventListener("keydown", (e) => {
+  if (findList.hidden || !findHits.length) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    findSel = (findSel + (e.key === "ArrowDown" ? 1 : -1) + findHits.length) % findHits.length;
+    findList.querySelectorAll("li").forEach((li, i) => li.setAttribute("aria-selected", String(i === findSel)));
+    findList.querySelector(`[data-i="${findSel}"]`)?.scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Enter") { e.preventDefault(); pickFind(findSel); }
+  else if (e.key === "Escape") { findList.hidden = true; }
 });
-$("#weatherSel").addEventListener("change", (e) => {
-  document.querySelectorAll("[data-weather]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.weather === e.target.value)));
-  ui.onWeather?.(e.target.value);
-});
+findList.addEventListener("pointerdown", (e) => { const li = e.target.closest("li[data-i]"); if (li) { e.preventDefault(); pickFind(+li.dataset.i); } });
+document.addEventListener("pointerdown", (e) => { if (!e.target.closest("#finder")) findList.hidden = true; });
 addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !panel.hidden) close();
   if ((e.key === "h" || e.key === "H") && !e.target.closest?.("input")) goOverview();
@@ -460,8 +659,27 @@ start({ stage: $("#stage"), ui }).then(() => {
   });
   $("#loading").classList.add("done");
   setTimeout(() => ($("#loading").hidden = true), 900); // 淡出後整個拿掉，慢的手機也不會卡著一層
+  // 第一次來才自動跳說明卡（記在這台裝置上；瀏覽器不讓記也沒關係，頂多每次都跳）
+  let seen = false;
+  try { seen = localStorage.getItem("story-island-guide") === "1"; } catch {}
+  if (!seen) setTimeout(showGuide, 700);
 }).catch((err) => {
   console.error(err);
   $("#loading").textContent = "島嶼載入失敗，請重新整理頁面。";
 });
+
+// 說明卡
+function showGuide() {
+  if (matchMedia("(hover: none)").matches) $("#guideHand").textContent = "一根手指拖曳轉動畫面，兩根手指縮放；右上角的小房子圖示隨時帶你回到高處。";
+  $("#guide").hidden = false;
+  $("#guideOk").focus();
+}
+function closeGuide() {
+  $("#guide").hidden = true;
+  try { localStorage.setItem("story-island-guide", "1"); } catch {}
+}
+$("#guideOk").onclick = closeGuide;
+$("#guide").addEventListener("click", (e) => e.target.id === "guide" && closeGuide());
+$("#helpBtn").onclick = showGuide;
+addEventListener("keydown", (e) => e.key === "Escape" && !$("#guide").hidden && closeGuide());
 </script>

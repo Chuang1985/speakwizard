@@ -26,6 +26,8 @@ const ANY_TEMPLATE = (name) => ALL_TEMPLATES.find((b) => b[name])?.[name];
 
 let ALL_POSTS = new Map(); // 全部故事，地標可以收別區的故事
 const PROXY_MAT = new THREE.MeshBasicMaterial({ visible: false }); // 看不見的點選方塊
+// 各區的霓虹色：島名招牌、區塊招牌、故事霓虹都用同一色系
+const ZONE_NEON = { ang: "#ff7ab8", shen: "#ffc04a", hun: "#6ff0ff", yao: "#8dff6a", yoyo: "#ffb347", laoban: "#fff0c8" };
 
 const TOP = 1.2; // 島面高度（水面是 0）
 const SQ3 = Math.sqrt(3);
@@ -781,7 +783,6 @@ export async function start({ stage, ui }) {
   const anim = []; // 建築的動態零件
   const pickables = [];
   const buildingLabels = [];
-  const subTags = []; // 合併區的區塊名牌：靠近那座島才顯示
   const nbAnglesOf = (z) => new Map(BRIDGES.filter((b) => b.includes(z.id)).map((b) => {
     const o = ZONES.find((x) => x.id === (b[0] === z.id ? b[1] : b[0]));
     return [o.id, Math.atan2(o.pos[1] - z.pos[1], o.pos[0] - z.pos[0])];
@@ -805,18 +806,6 @@ export async function start({ stage, ui }) {
       }
       const tz = buildTileZone(z, g, nb, anim, zp);
       Object.assign(zone, { tiles: tz.tiles, roads: tz.roads, exits: tz.exits, S: tz.S, r: tz.outer, N: tz.N, centers: tz.centers });
-      // 區塊名牌：浮在每一塊的中間，點了飛過去
-      for (const s of z.sectors || []) {
-        const c = tz.centers[s.id];
-        const el = document.createElement("button");
-        el.className = "zone-tag sub";
-        el.innerHTML = `<b>${s.name}</b><small>${zp.filter((p) => (p.cats || [p.cat]).includes(s.cat)).length} 瓶</small>`;
-        el.addEventListener("click", () => openSector(z.id, s.id));
-        const lbl = new CSS2DObject(el);
-        lbl.position.set(c.x, 4.2, c.z);
-        g.add(lbl);
-        subTags.push({ el, zone });
-      }
       // 總建築
       const main = ANY_BUILDER(z.main.model)(anim);
       main.position.y = 0.2;
@@ -868,13 +857,6 @@ export async function start({ stage, ui }) {
     pickables.push(g);
     scene.add(g);
 
-    const tag = document.createElement("button");
-    tag.className = "zone-tag";
-    tag.innerHTML = `<b>${z.name}</b><small>${zp.length} 瓶</small>`;
-    tag.addEventListener("click", () => openZone(z.id));
-    const lbl = new CSS2DObject(tag);
-    lbl.position.set(0, zone.tiles ? 8.6 : 5.2, 0);
-    g.add(lbl);
     zones.set(z.id, zone);
   }
   // 磚的區域座標 → 世界座標（島有轉向時一起轉）
@@ -882,6 +864,48 @@ export async function start({ stage, ui }) {
     const c = Math.cos(zone.rotY || 0), s = Math.sin(zone.rotY || 0);
     return new THREE.Vector3(zone.pos[0] + t.x * c + t.z * s + lane, TOP + t.h, zone.pos[1] - t.x * s + t.z * c + lane * 0.6);
   };
+
+  // ---- 島名招牌：恆亮的霓虹招牌，升高、往島外側推，拉一條細光線落到島上標註 ----
+  const signAnchors = []; // 招牌的世界座標（招牌下緣），故事霓虹要避開
+  function addSign({ text, count, color, x, z, baseY, height, cls, onClick }) {
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = cls;
+    el.style.setProperty("--nc", color);
+    el.innerHTML = `<b>${text}</b>${count != null ? `<small>${count} 瓶</small>` : ""}`;
+    el.addEventListener("click", onClick);
+    const obj = new CSS2DObject(el);
+    obj.center.set(0.5, 1); // 招牌的下緣中點對準線的頂端
+    obj.position.set(x, baseY + height, z);
+    scene.add(obj);
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, baseY, z), new THREE.Vector3(x, baseY + height, z)]),
+      new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.8 }));
+    const dot = at(ball(0.2, glow(color, 1.3), 8), x, baseY + 0.12, z);
+    dot.castShadow = false;
+    scene.add(line, dot);
+    signAnchors.push(obj.position);
+    return { el, obj, line, dot };
+  }
+  const subTags = []; // 合併區的區塊招牌：靠近那座島才顯示
+  for (const zone of zones.values()) {
+    const color = ZONE_NEON[zone.id] || "#fff0c8";
+    // 往遠離群島中心的方向推；中央那座沒有「外側」，就往後方偏
+    const len = Math.hypot(zone.pos[0], zone.pos[1]);
+    const dx = len ? zone.pos[0] / len : -0.6, dz = len ? zone.pos[1] / len : -0.8;
+    // 在群島後方（離鏡頭遠、dz < 0）的島：招牌推得少一點、矮一點，不然會頂到畫面上緣被按鈕擋住
+    const back = Math.max(0, -dz);
+    const push = zone.r * (0.6 - back * 0.35);
+    const x = zone.pos[0] + dx * push, z = zone.pos[1] + dz * push;
+    addSign({ text: zone.name, count: zone.posts.length, color, x, z, baseY: TOP + 0.3, height: 11 - back * 4.5, cls: "zone-sign", onClick: () => openZone(zone.id) });
+    for (const s of zone.sectors || []) {
+      const c = tileWorld(zone, zone.centers[s.id]);
+      const sign = addSign({ text: s.name, count: zone.posts.filter((p) => (p.cats || [p.cat]).includes(s.cat)).length, color, x: c.x, z: c.z,
+        baseY: TOP + 0.3, height: 5.5, cls: "zone-sign sub", onClick: () => openSector(zone.id, s.id) });
+      sign.el.hidden = true; // 一開始是俯瞰，先藏起來，靠近才出現
+      sign.line.visible = sign.dot.visible = false;
+      subTags.push({ ...sign, zone });
+    }
+  }
 
   // ---- 橋 ----
   const bridgeGroup = new THREE.Group(); // 橋的木板、欄杆最後合併成幾個網格
@@ -1256,6 +1280,74 @@ export async function start({ stage, ui }) {
       posts: z.posts.filter((p) => (p.cats || [p.cat]).includes(s.cat)), buildings: z.buildings.filter((b) => b.sector === sid) };
     ui.showZone(sub, agents.filter((a) => a.zone === zid && (a.def.homeB ? z.buildings.find((b) => b.id === a.def.homeB)?.sector === sid : false)), { open: openAgent, openBuilding });
   }
+  // 點霓虹招牌：直接打開那一篇故事
+  function openPost(post, b) {
+    follow = null;
+    flyTo(tileWorld(zones.get(b.zone), b.tile), 18);
+    ui.showPost(post, b, zones.get(b.zone), { openBuilding });
+  }
+
+  // ---- 霓虹招牌：建築上方隨機亮起一篇故事的篇名，像老街夜裡的霓虹燈 ----
+  // 只挑畫面上看得到的建築；同時最多 3～4 塊（手機 2 塊、俯瞰 2 塊）；入夜亮得比較多
+  const NEON_COLOR = ZONE_NEON;
+  const neons = [];
+  for (let i = 0; i < 4; i++) {
+    const el = document.createElement("button");
+    el.className = "neon";
+    el.type = "button";
+    const obj = new CSS2DObject(el);
+    obj.visible = false;
+    scene.add(obj);
+    const n = { el, obj, b: null, post: null, until: 0 };
+    el.addEventListener("click", () => n.b && openPost(n.post, n.b));
+    neons.push(n);
+  }
+  const neonText = (t) => {
+    const s = t.replace(/[〈〉《》⭐☄⛓〽⛰]/g, "").replace(/\s+/g, " ").trim();
+    return s.length > 14 ? s.slice(0, 13) + "…" : s;
+  };
+  const ndcV = new THREE.Vector3();
+  let neonT = 1.2;
+  function updateNeon(dt) {
+    for (const n of neons) if (n.b && elapsed > n.until) { n.obj.visible = false; n.b.neon = false; n.b = null; }
+    const far = camera.position.distanceTo(controls.target) > 90;
+    const max = isPhone || far ? 2 : night > 0.5 ? 4 : 3;
+    neonT -= dt;
+    if (neonT > 0 || neons.filter((n) => n.b).length >= max) return;
+    neonT = rand(0.9, 1.8);
+    // 島名、區塊招牌在螢幕上的位置（像素），故事霓虹不能亮在它們旁邊
+    const W = stage.clientWidth, H = stage.clientHeight;
+    const toPx = (v) => ({ x: (v.x * 0.5 + 0.5) * W, y: (-v.y * 0.5 + 0.5) * H, z: v.z });
+    const signsPx = signAnchors.map((p) => toPx(ndcV.copy(p).project(camera))).filter((p) => p.z < 1);
+    const busyPx = neons.filter((n) => n.b).map((n) => toPx(ndcV.copy(n.obj.position).project(camera)));
+    const cands = buildingLabels.filter((b) => {
+      if (b.neon || !b.posts.length || (far && b.tier !== 1)) return false;
+      b.group.getWorldPosition(wp);
+      if (camera.position.distanceTo(wp) > (far ? 400 : 75)) return false;
+      wp.y += b.tier === 1 ? 3.6 : 2.6;
+      ndcV.copy(wp).project(camera);
+      if (!(Math.abs(ndcV.x) < 0.85 && ndcV.y > -0.65 && ndcV.y < 0.7 && ndcV.z < 1)) return false;
+      const p = toPx(ndcV);
+      // 招牌掛在錨點上方約 60px 高：水平 150px、垂直往上 75px 內都算撞到
+      if (signsPx.some((s) => Math.abs(s.x - p.x) < 150 && p.y < s.y + 25 && p.y > s.y - 75)) return false;
+      return !busyPx.some((s) => Math.abs(s.x - p.x) < 130 && Math.abs(s.y - p.y) < 36); // 也別跟正在亮的疊在一起
+    });
+    const n = neons.find((x) => !x.b);
+    if (!cands.length || !n) return;
+    const b = pick(cands), post = pick(b.posts);
+    b.group.getWorldPosition(wp);
+    n.obj.position.set(wp.x, wp.y + (b.tier === 1 ? 3.6 : 2.6), wp.z);
+    n.el.textContent = neonText(post.t);
+    n.el.title = `點這裡讀〈${post.t}〉`;
+    n.el.style.setProperty("--nc", NEON_COLOR[b.zone] || "#fff0c8");
+    n.el.classList.remove("on");
+    void n.el.offsetWidth; // 重新觸發閃爍動畫
+    n.el.classList.add("on");
+    Object.assign(n, { b, post, until: elapsed + 3.8 });
+    n.obj.visible = true;
+    b.neon = true;
+  }
+
   function openBuilding(b) {
     follow = null;
     const z = zones.get(b.zone);
@@ -1275,7 +1367,25 @@ export async function start({ stage, ui }) {
       ui.showAgent(ag.def, zone, mine, ag.kind, homeB, { openBuilding });
     }
   }
+  // 全島搜尋：每一篇故事對到它所在的建築（同一篇放在兩處時取第一處）
+  const postHome = new Map();
+  for (const z of zones.values()) for (const b of z.buildings) for (const p of b.posts || []) if (!postHome.has(p.id)) postHome.set(p.id, b);
+  function find(q) {
+    const s = q.toLowerCase();
+    const people = agents.filter((a) => a.kind !== "shop" && a.def.name.includes(q)).map((a) => ({
+      title: a.def.name, sub: `${a.def.role || a.def.type}・現在在${zones.get(a.zone).name}`, go: () => openAgent(a) }));
+    const stories = [];
+    for (const [id, b] of postHome) {
+      const p = ALL_POSTS.get(id);
+      if (!p || !`${p.t} ${p.g || ""}`.toLowerCase().includes(s)) continue;
+      stories.push({ title: p.t, sub: `${zones.get(b.zone).name}・${b.series || b.name}`, go: () => openPost(p, b), hit: p.t.toLowerCase().includes(s) });
+    }
+    stories.sort((a, b) => b.hit - a.hit); // 篇名直接命中的排前面，只命中系列的排後面
+    return [...people, ...stories].slice(0, 30);
+  }
+
   ui.api = {
+    find,
     openZone, openSector, openShop: () => openAgent(shop),
     closed: () => { follow = null; },
     // 全島俯瞰：回到開場的角度與距離
@@ -1289,27 +1399,33 @@ export async function start({ stage, ui }) {
   const MAP_R = Math.max(...[...zones.values()].map((z) => Math.hypot(z.pos[0], z.pos[1]) + z.r));
   const OVERVIEW_DIR = new THREE.Vector3(0, 78, 92).normalize();
   function overviewDist() {
-    const aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
-    const halfW = Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * aspect);
-    return Math.max(124, (MAP_R * 0.85) / Math.tan(halfW));
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return 124; // 頁面還沒有大小（例如嵌在框裡剛載入）：先用預設距離，不然會算出無限遠、整片黑
+    const halfW = Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * (w / h));
+    return THREE.MathUtils.clamp((MAP_R * 0.85) / Math.tan(halfW), 124, 600);
   }
+  // 使用者還沒動過鏡頭前，畫面大小一變（剛載入、轉手機方向）就重新擺好全島俯瞰
+  let userMoved = false;
+  controls.addEventListener("start", () => (userMoved = true));
   function resize() {
     const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
     renderer.setSize(w, h);
     labels.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     controls.maxDistance = Math.max(180, overviewDist() * 1.25);
+    if (!userMoved && !focus) camera.position.copy(controls.target).addScaledVector(OVERVIEW_DIR, overviewDist());
   }
   new ResizeObserver(resize).observe(stage);
-  resize();
   camera.position.copy(controls.target).addScaledVector(OVERVIEW_DIR, overviewDist()); // 開場就是全島俯瞰
+  resize();
 
   const clock = new THREE.Clock();
   let elapsed = 0, frame = 0, viewOff = 0, viewOffY = 0;
   const tmp = new THREE.Vector3();
   const wp = new THREE.Vector3();
-  renderer.setAnimationLoop(() => {
+  const tick = () => {
     const raw = clock.getDelta();
     const dt = Math.min(raw, 0.05); // 走路、動畫用：卡頓時不要一次跳太遠
     const realDt = Math.min(raw, 1); // 天氣漸變用真實時間，電腦慢也一樣幾秒換好
@@ -1340,13 +1456,14 @@ export async function start({ stage, ui }) {
 
     // 滑過放大一點；靠近時才顯示建築與居民名牌，避免畫面太擠
     if (frame % 3 === 0) updateHover();
+    updateNeon(dt);
     for (const b of buildingLabels) {
       const k = hover === b.group ? 1.07 : 1;
       b.group.scale.setScalar(b.group.scale.x + (k - b.group.scale.x) * 0.25);
       if (frame % 10 === 0) {
         b.group.getWorldPosition(wp);
         // 地標靠近就顯示名牌；街坊與路標要更近才顯示，避免整片都是字
-        b.el.hidden = !(hover === b.group || camera.position.distanceTo(wp) < (b.tier === 1 ? 34 : 20));
+        b.el.hidden = b.neon || !(hover === b.group || camera.position.distanceTo(wp) < (b.tier === 1 ? 34 : 20)); // 霓虹亮著時名牌先讓位
       }
     }
     for (const a of agents) {
@@ -1357,7 +1474,9 @@ export async function start({ stage, ui }) {
 
     if (frame % 10 === 0) for (const s of subTags) {
       s.zone.group.getWorldPosition(wp);
-      s.el.hidden = camera.position.distanceTo(wp) > 85;
+      const show = camera.position.distanceTo(wp) <= 85;
+      s.el.hidden = !show;
+      s.line.visible = s.dot.visible = show;
     }
 
     // 開著卡片時，畫面挪開讓主角不被蓋住：桌機卡片在右邊，往左挪；手機卡片在下面，往上挪
@@ -1384,8 +1503,41 @@ export async function start({ stage, ui }) {
         camera.position.copy(controls.target).add(off);
       } else if (!follow && controls.target.distanceTo(focus.target) < 0.05) focus = null;
     }
+    // 保險：鏡頭位置萬一變成無效數字（會整片黑），直接拉回全島俯瞰
+    if (!Number.isFinite(camera.position.x + camera.position.y + camera.position.z)) {
+      focus = null;
+      controls.target.set(0, 0, 4);
+      camera.position.copy(controls.target).addScaledVector(OVERVIEW_DIR, overviewDist());
+    }
     controls.update();
     renderer.render(scene, camera);
     labels.render(scene, camera);
-  });
+  };
+  // 自己跑畫面迴圈：先排好下一格再畫這一格，某一格出錯也不會停住。
+  // 頁面剛載入時如果還沒有大小（嵌在預覽框裡、手機剛開），瀏覽器會把那時排的畫面請求吞掉，
+  // 迴圈就再也不會開始、整片黑；所以加一個看門狗，每秒檢查一次，停了就重新啟動。
+  let loopErr = null, lastTick = 0, pending = false;
+  const loop = () => {
+    pending = false;
+    schedule();
+    lastTick = performance.now();
+    try { tick(); } catch (e) {
+      if (!loopErr) {
+        loopErr = e;
+        console.error("[故事柑仔店島] 畫面更新出錯：", e);
+      }
+    }
+  };
+  function schedule() {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(loop);
+  }
+  schedule();
+  setInterval(() => {
+    if (document.visibilityState === "visible" && performance.now() - lastTick > 1500) {
+      pending = false; // 之前排的那一格被吞掉了，重新排
+      schedule();
+    }
+  }, 1000);
 }
