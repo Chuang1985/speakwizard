@@ -230,6 +230,23 @@ body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var
 .mood-row { display: grid; gap: 6px; }
 .mood-row > span { font: 600 11px var(--body); letter-spacing: .12em; color: rgba(251,241,220,.65); }
 .mood-pop .daybox { background: rgba(255,255,255,.06); }
+/* 故事目錄：六座島依序排，每座可以展開看地標 */
+.idx { list-style: none; margin: 0; padding: 0; display: grid; }
+.idx > li { border-bottom: 1px solid var(--line); }
+.idx-row { width: 100%; display: grid; grid-template-columns: 46px 1fr auto auto; align-items: center; gap: 8px; padding: 12px 2px; background: none; border: 0; cursor: pointer; text-align: left; color: var(--ink); }
+.idx-row:hover .idx-name { color: var(--red); }
+.idx-no { font: 700 24px var(--display); font-style: italic; color: var(--nc); text-shadow: 0 0 1px rgba(0,0,0,.25); }
+.idx-name { font: 700 16px var(--display); letter-spacing: .04em; }
+.idx-n { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.idx-tog { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--muted); cursor: pointer; font-size: 12px; }
+.idx-tog[aria-expanded="true"] { transform: rotate(180deg); }
+.idx-sub { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; padding: 0 0 12px 54px; }
+.idx-sub button { text-align: left; font: 500 13px var(--body); color: #4a3d30; background: none; border: 0; padding: 3px 0; cursor: pointer; display: flex; justify-content: space-between; gap: 6px; }
+.idx-sub button:hover { color: var(--red); }
+.idx-sub small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.idx-foot { font-size: 12px; color: var(--muted); line-height: 1.7; margin: 0; }
+.chip.idx-chip { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+
 /* 卡片裡可收合的區塊 */
 .p-fold { border-top: 1px dashed var(--line); padding-top: 10px; }
 .p-fold > summary { cursor: pointer; list-style: none; font: 700 13px var(--body); letter-spacing: .12em; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
@@ -370,15 +387,71 @@ function head(kicker, title, text, meta = "") {
     <button class="p-close" type="button" aria-label="關閉">×</button></div>`;
 }
 function open(html) {
+  autoIndexOn = false;
   panel.innerHTML = html;
   panel.hidden = false;
+  panel.dataset.index = "";
+  panel.scrollTop = 0;
   ui.panelOpen = true;
   $(".p-close", panel).onclick = close;
 }
+// 電腦版：關掉卡片時回到故事目錄（除非使用者自己把目錄也關了）；手機版直接收起來
+let indexDismissed = false;
+let autoIndexOn = true; // 開場自動打開目錄（只做一次）
+const isWide = () => innerWidth > 720;
 function close() {
-  panel.hidden = true;
-  ui.panelOpen = false;
   ui.api?.closed();
+  if (isWide() && !indexDismissed && !panel.dataset.index) return showIndex();
+  panel.hidden = true;
+  panel.dataset.index = "";
+  ui.panelOpen = false;
+}
+// 故事目錄
+function showIndex() {
+  if (!ui.api) return;
+  indexDismissed = false;
+  const zs = ui.api.zones;
+  const total = new Set(zs.flatMap((z) => z.posts.map((p) => p.id))).size;
+  open(head("故事目錄", "故事柑仔店島", `${zs.length} 座島，${total} 個故事瓶。點一座島走進去，或點右邊的箭頭看島上有什麼。`) +
+    `<div class="p-body"><ul class="idx" id="idx"></ul>
+      <p class="idx-foot">找不到想看的？試試頂列的「找故事」，或在海上撿一個發光的漂流瓶。</p></div>`);
+  panel.dataset.index = "1";
+  const ul = $("#idx", panel);
+  zs.forEach((z, i) => {
+    const li = document.createElement("li");
+    const marks = z.buildings.filter((b) => b.tier === 1).sort((a, b) => (a.step || 99) - (b.step || 99));
+    const parts = [...(z.sectors || []), ...(z.towers || [])];
+    li.innerHTML = `<div style="display:flex;align-items:center">
+        <button class="idx-row" type="button" style="--nc:${z.id === "laoban" ? "#c9a050" : ui.api.neon[z.id] || "#c8433a"}">
+          <span class="idx-no">${String(i + 1).padStart(2, "0")}</span><span class="idx-name">${esc(z.name)}</span><span class="idx-n">${z.posts.length} 篇</span></button>
+        <button class="idx-tog" type="button" aria-expanded="false" aria-label="展開${esc(z.name)}的地標">▾</button></div>
+      <div class="idx-sub" hidden></div>`;
+    li.querySelector(".idx-row").onclick = () => ui.api.openZone(z.id);
+    const tog = li.querySelector(".idx-tog"), sub = li.querySelector(".idx-sub");
+    tog.onclick = () => {
+      const on = sub.hidden;
+      sub.hidden = !on;
+      tog.setAttribute("aria-expanded", String(on));
+      if (on && !sub.childElementCount) {
+        parts.forEach((s) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.innerHTML = `<span>▸ ${esc(s.name)}</span><small>${z.posts.filter((p) => (p.cats || [p.cat]).includes(s.cat)).length}</small>`;
+          b.onclick = () => ui.api.openSector(z.id, s.id);
+          sub.append(b);
+        });
+        marks.forEach((bd) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.innerHTML = `<span>${esc(bd.label || bd.name)}</span><small>${bd.posts.length}</small>`;
+          b.onclick = () => ui.api.openBuilding(bd);
+          sub.append(b);
+        });
+      }
+    };
+    ul.append(li);
+  });
+  $(".p-close", panel).onclick = () => { indexDismissed = true; close(); };
 }
 function storyList(container, posts) {
   const ul = document.createElement("ul");
@@ -518,9 +591,9 @@ const ui = {
     storyList($("#stories", panel), posts);
   },
   // 點霓虹招牌：只看這一篇，下面可以再看整棟
-  showPost(p, b, zone, { openBuilding }) {
+  showPost(p, b, zone, { openBuilding, kicker }) {
     const ex = (p.ex || "").trim();
-    open(head(`${zone.name}・${b.series || b.name}`, p.t, "",
+    open(head(kicker || `${zone.name}・${b.series || b.name}`, p.t, "",
       `<div class="p-meta"><span>${esc(p.d || "")}</span>${p.g ? `<span>${esc(p.g)}</span>` : ""}</div>`) +
       `<div class="p-body">
         ${ex ? `<p style="margin:0;font-size:14px;line-height:1.8;color:#4a3d30">${esc(ex.slice(0, 140))}${ex.length > 140 ? "……" : ""}</p>` : ""}
@@ -632,6 +705,12 @@ $("#overviewBtn").onclick = goOverview;
 
 start({ stage: $("#stage"), ui }).then(() => {
   const chips = $("#chips");
+  const idxChip = document.createElement("button");
+  idxChip.className = "chip idx-chip";
+  idxChip.type = "button";
+  idxChip.textContent = "☰ 目錄";
+  idxChip.onclick = showIndex;
+  chips.append(idxChip);
   const shopChip = document.createElement("button");
   shopChip.className = "chip shop";
   shopChip.type = "button";
@@ -659,6 +738,14 @@ start({ stage: $("#stage"), ui }).then(() => {
   });
   $("#loading").classList.add("done");
   setTimeout(() => ($("#loading").hidden = true), 900); // 淡出後整個拿掉，慢的手機也不會卡著一層
+  // 電腦版：右側預設是故事目錄。頁面剛載入時可能還沒有寬度，等寬度出來再自動開一次；
+  // 使用者自己打開過任何卡片之後就不再自動開
+  const autoIndex = () => {
+    if (!autoIndexOn) return removeEventListener("resize", autoIndex);
+    if (isWide() && panel.hidden) { autoIndexOn = false; showIndex(); }
+  };
+  autoIndex();
+  addEventListener("resize", autoIndex);
   // 第一次來才自動跳說明卡（記在這台裝置上；瀏覽器不讓記也沒關係，頂多每次都跳）
   let seen = false;
   try { seen = localStorage.getItem("story-island-guide") === "1"; } catch {}

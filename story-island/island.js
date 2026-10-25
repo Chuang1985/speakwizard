@@ -18,6 +18,7 @@ import { YAO_BUILDERS, YAO_TEMPLATES, YAO_DECOR } from "./buildings-yao.js";
 import { YOYO_BUILDERS, YOYO_TEMPLATES, YOYO_DECOR } from "./buildings-yoyo.js";
 import { LAOBAN_BUILDERS, LAOBAN_TEMPLATES, LAOBAN_DECOR } from "./buildings-laoban.js";
 import { createWeather, createSeaLife } from "./weather.js";
+import { buildMountains, buildIslets, buildBottles } from "./scenery.js";
 
 const ALL_BUILDERS = [BUILDERS, TOWN_BUILDERS, SHEN_BUILDERS, YAO_BUILDERS, YOYO_BUILDERS, LAOBAN_BUILDERS];
 const ALL_TEMPLATES = [TEMPLATES, TOWN_TEMPLATES, SHEN_TEMPLATES, YAO_TEMPLATES, YOYO_TEMPLATES, LAOBAN_TEMPLATES];
@@ -972,6 +973,15 @@ export async function start({ stage, ui }) {
     + Math.sin((x + z) * 0.045 + waveT * 0.5) * 0.3) * waveAmp - 0.1;
   const weather = createWeather(scene);
   const sea = createSeaLife(scene, zones, waveAt);
+
+  // ---- 群島外圍的風景：遠山、海上小島、漂流故事瓶 ----
+  const SEA_R = Math.max(...[...zones.values()].map((z) => Math.hypot(z.pos[0], z.pos[1]) + z.r));
+  const nightRef = { v: 0 }; // 燈塔光束要知道現在多暗
+  buildMountains(scene, SEA_R);
+  buildIslets(scene, SEA_R, anim, nightRef, waveAt);
+  const isSeaPt = (x, z) => [...zones.values()].every((zn) => Math.hypot(x - zn.pos[0], z - zn.pos[1]) > zn.r + 3);
+  const bottles = buildBottles(scene, { count: 6, isSea: isSeaPt, waveAt, mapR: SEA_R });
+  pickables.push(...bottles.pickables);
   ui.onWeather = (m) => weather.setMode(m);
 
   // ---- 角色 ----
@@ -1218,6 +1228,7 @@ export async function start({ stage, ui }) {
     const h = ray.intersectObjects(pickables, true)[0];
     if (!h) return null;
     const u = h.object.userData;
+    if (u.bottle) return { bottle: u.bottle };
     if (u.agent) return { agent: u.agent };
     if (u.building) return { building: u.building };
     if (u.main) return { zone: u.main };
@@ -1232,6 +1243,7 @@ export async function start({ stage, ui }) {
     if (!h) return;
     if (h.agent) openAgent(h.agent);
     else if (h.building) openBuilding(h.building);
+    else if (h.bottle) openBottle(h.bottle);
     else if (h.zone) openZone(h.zone);
   });
   let hover = null, hoverEvt = null;
@@ -1280,6 +1292,16 @@ export async function start({ stage, ui }) {
       posts: z.posts.filter((p) => (p.cats || [p.cat]).includes(s.cat)), buildings: z.buildings.filter((b) => b.sector === sid) };
     ui.showZone(sub, agents.filter((a) => a.zone === zid && (a.def.homeB ? z.buildings.find((b) => b.id === a.def.homeB)?.sector === sid : false)), { open: openAgent, openBuilding });
   }
+  // 撿到漂流故事瓶：隨機一篇故事，瓶子沉下去，過一會兒在別處浮上來
+  function openBottle(g) {
+    const ids = [...postHome.keys()];
+    const id = ids[Math.floor(Math.random() * ids.length)];
+    const b = postHome.get(id), p = ALL_POSTS.get(id);
+    bottles.take(g);
+    follow = null;
+    ui.showPost(p, b, zones.get(b.zone), { openBuilding, kicker: "漂流故事瓶・撿到一封信" });
+  }
+
   // 點霓虹招牌：直接打開那一篇故事
   function openPost(post, b) {
     follow = null;
@@ -1385,7 +1407,7 @@ export async function start({ stage, ui }) {
   }
 
   ui.api = {
-    find,
+    find, openBuilding, neon: ZONE_NEON,
     openZone, openSector, openShop: () => openAgent(shop),
     closed: () => { follow = null; },
     // 全島俯瞰：回到開場的角度與距離
@@ -1438,6 +1460,8 @@ export async function start({ stage, ui }) {
     waveAmp += (0.8 + w.cloud * 0.4 + w.rain * 1.3 - w.fog * 0.3 - waveAmp) * Math.min(1, dt * 0.5);
     waveT += dt * (1 + w.rain * 0.6);
     sea.update(dt, elapsed, w, controls.target, night);
+    nightRef.v = night;
+    bottles.update(elapsed, dt);
 
     agents.forEach((a) => updateAgent(a, dt));
     anim.forEach((fn) => fn(elapsed, dt));
