@@ -1,0 +1,467 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>故事柑仔店島</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="故事柑仔店的互動島嶼：九個貨架分區、五位語巫與一間會移動的柑仔店。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* 版面：整頁是島（3D），右側（手機為底部）是一張柑仔店的貨架標籤卡 */
+:root {
+  --dusk: #1c1830;      /* 夜色底 */
+  --paper: #fbf1dc;     /* 標籤紙 */
+  --ink: #2a2118;       /* 墨色字 */
+  --muted: #7a6a58;     /* 次要字 */
+  --orange: #f29a3e;    /* 柑仔色 */
+  --red: #c8433a;       /* 招牌紅 */
+  --gold: #ffc93c;      /* 語巫外框 */
+  --line: #e4d3b2;
+  --display: "LXGW WenKai TC", "Kaiti TC", "DFKai-SB", serif;
+  --body: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var(--body); overflow: hidden; }
+#app { position: fixed; inset: 0; }
+#stage { position: absolute; inset: 0; }
+#stage canvas { display: block; touch-action: none; }
+.labels { position: absolute; inset: 0; z-index: 1; } /* 名牌自己排前後，但整層在頂列與卡片下面 */
+
+/* 頂列 */
+.bar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+.bar > * { pointer-events: auto; }
+.brand { display: flex; flex-direction: column; gap: 2px; text-shadow: 0 2px 10px rgba(0,0,0,.45); }
+.brand a { color: inherit; text-decoration: none; }
+.brand h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(22px, 3.4vw, 32px); letter-spacing: .06em; }
+.brand p { margin: 0; font-size: 13px; opacity: .85; letter-spacing: .08em; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.overview { display: flex; align-items: center; gap: 6px; font: 700 13px var(--body); color: var(--ink); background: var(--paper); border: 2px solid var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; box-shadow: 0 3px 0 var(--ink); }
+.overview:hover { background: var(--orange); }
+.overview:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.daybox { display: flex; background: rgba(20,16,32,.55); border: 1px solid rgba(255,240,210,.25); border-radius: 999px; padding: 3px; backdrop-filter: blur(6px); }
+.daybox button { font: 500 13px var(--body); color: var(--paper); background: none; border: 0; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.daybox button[aria-pressed="true"] { background: var(--orange); color: var(--ink); }
+
+/* 底部：分區快捷 */
+.zonebar {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.zonebar .scroll { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-block: 4px; }
+.zonebar .scroll::-webkit-scrollbar { display: none; }
+.chip { flex: none; font: 500 13px var(--body); color: var(--paper); background: rgba(20,16,32,.6); border: 1px solid rgba(255,240,210,.25); border-radius: 999px; padding: 7px 13px; cursor: pointer; backdrop-filter: blur(6px); white-space: nowrap; }
+.chip:hover { border-color: var(--orange); }
+.chip.shop { background: var(--red); border-color: var(--red); }
+.chip.sub { font-size: 12px; padding: 6px 11px; border-style: dashed; }
+.zone-tag.sub { font-size: 12px; padding: 2px 7px 3px; box-shadow: 0 2px 0 var(--ink); background: #fff7e6; }
+.chip .where { opacity: .8; font-size: 12px; margin-left: 4px; }
+
+/* 島上標籤 */
+.zone-tag { font: 700 14px var(--display); color: var(--ink); background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; padding: 3px 9px 4px; cursor: pointer; display: flex; gap: 6px; align-items: baseline; box-shadow: 0 3px 0 var(--ink); pointer-events: auto; letter-spacing: .04em; }
+.zone-tag small { font: 500 11px var(--body); color: var(--muted); }
+.zone-tag:hover { background: #fff7e6; }
+.agent-tag { pointer-events: auto; cursor: pointer; font: 700 12px var(--body); color: var(--ink); background: var(--gold); border: 0; border-radius: 999px; padding: 2px 9px 3px; display: flex; gap: 4px; align-items: baseline; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.agent-tag small { font-weight: 500; font-size: 10px; opacity: .7; }
+.agent-tag.shop { background: var(--red); color: #fff3d6; font: 700 13px var(--display); padding: 3px 11px; }
+.agent-tag.resident { background: var(--paper); box-shadow: 0 0 0 2px var(--oc, var(--orange)), 0 2px 6px rgba(0,0,0,.35); }
+.bld-tag { pointer-events: auto; cursor: pointer; font: 700 12px var(--display); color: #fff3d6; background: rgba(29,20,24,.86); border: 1px solid var(--gold); border-radius: 4px; padding: 2px 8px 3px; letter-spacing: .04em; white-space: nowrap; }
+.bld-tag:hover { background: var(--red); }
+.bld-tag.tier2, .bld-tag.tier3 { font: 500 11px var(--body); padding: 1px 6px 2px; max-width: 9em; overflow: hidden; text-overflow: ellipsis; border-color: rgba(255,201,60,.5); }
+.bld-tag.tier3 { background: rgba(60,40,20,.82); }
+.subs { display: grid; gap: 10px; }
+.subs h4 { margin: 0 0 6px; font: 700 12px var(--body); color: var(--ink); display: flex; gap: 6px; align-items: baseline; }
+.subs h4 small { color: var(--muted); font-weight: 500; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chips button { font: 500 12px var(--body); border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 4px; padding: 3px 7px; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chips button:hover { border-color: var(--red); color: var(--red); }
+.blds { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.blds button { text-align: left; font: 500 13px var(--body); border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 6px; padding: 7px 9px; cursor: pointer; display: flex; justify-content: space-between; gap: 6px; }
+.blds button small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.blds button:hover { border-color: var(--red); }
+.bubble { font: 500 12px var(--body); color: var(--ink); background: #fff; border-radius: 10px; padding: 5px 10px; max-width: 180px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,.3); position: relative; pointer-events: none; }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: #fff; }
+.zone-tag:focus-visible, .agent-tag:focus-visible, .chip:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+/* 貨架標籤卡 */
+#panel {
+  position: absolute; z-index: 6; top: calc(env(safe-area-inset-top, 0px) + 76px); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+  width: min(380px, calc(100% - 32px)); display: flex; flex-direction: column;
+  background: var(--paper); color: var(--ink); border-radius: 10px; box-shadow: 0 18px 40px rgba(0,0,0,.45);
+  overflow: hidden;
+}
+#panel::before { content: ""; height: 8px; flex: none; background: repeating-linear-gradient(90deg, var(--red) 0 18px, var(--paper) 18px 36px); }
+.p-head { padding: 16px 18px 12px; border-bottom: 1px dashed var(--line); display: grid; gap: 6px; position: relative; }
+.p-kicker { font-size: 11px; letter-spacing: .18em; color: var(--red); font-weight: 700; }
+.p-head h2 { margin: 0; font: 700 26px/1.2 var(--display); letter-spacing: .04em; text-wrap: balance; padding-right: 36px; }
+.p-head p { margin: 0; font-size: 14px; line-height: 1.7; color: #4a3d30; }
+.p-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: #fff8ea; color: var(--ink); font-size: 18px; cursor: pointer; line-height: 1; }
+.p-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.p-meta b { color: var(--ink); }
+.p-body { overflow-y: auto; padding: 12px 18px 18px; display: grid; gap: 14px; align-content: start; min-height: 0; }
+.p-sec h3 { margin: 0 0 8px; font: 700 13px var(--body); letter-spacing: .12em; color: var(--muted); }
+.people { display: flex; flex-wrap: wrap; gap: 6px; }
+.people button { font: 500 13px var(--body); border: 1.5px solid var(--gold); background: #fff6d6; color: var(--ink); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.people .none { font-size: 13px; color: var(--muted); }
+.series { display: flex; flex-wrap: wrap; gap: 6px; }
+.series button { font: 500 12px var(--body); border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 4px; padding: 3px 8px; cursor: pointer; }
+.series button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.search { width: 100%; box-sizing: border-box; font: 14px var(--body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; }
+.list li a { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 2px; border-bottom: 1px dotted var(--line); color: var(--ink); text-decoration: none; }
+.list li a:hover .t { color: var(--red); }
+.list .t { font-size: 14px; line-height: 1.5; min-width: 0; }
+.list .d { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; align-self: center; }
+.list .g { grid-column: 1 / -1; font-size: 11px; color: var(--muted); }
+.more { font: 500 13px var(--body); background: none; border: 1px dashed var(--muted); color: var(--ink); border-radius: 6px; padding: 7px; cursor: pointer; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: 700 14px var(--body); text-decoration: none; border-radius: 6px; padding: 9px 14px; cursor: pointer; border: 2px solid var(--ink); background: var(--orange); color: var(--ink); box-shadow: 0 3px 0 var(--ink); }
+.btn.ghost { background: #fff8ea; }
+.draw { border: 2px dashed var(--orange); border-radius: 8px; padding: 12px; background: #fff8ea; display: grid; gap: 6px; }
+.draw b { font: 700 17px var(--display); }
+.draw p { margin: 0; font-size: 13px; line-height: 1.7; color: #4a3d30; }
+.draw a { color: var(--red); font-weight: 700; font-size: 13px; }
+
+#hint { position: absolute; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 60px); font-size: 12px; color: var(--paper); opacity: .75; white-space: nowrap; text-shadow: 0 1px 6px rgba(0,0,0,.6); pointer-events: none; }
+#loading { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; background: var(--dusk); font: 700 20px var(--display); letter-spacing: .1em; transition: opacity .6s; }
+#loading.done { opacity: 0; pointer-events: none; }
+
+.mobile-selects { display: none; }
+.sel { display: flex; align-items: center; gap: 4px; background: rgba(20,16,32,.6); border: 1px solid rgba(255,240,210,.25); border-radius: 999px; padding: 2px 4px 2px 10px; backdrop-filter: blur(6px); }
+.sel span { font: 500 11px var(--body); opacity: .75; }
+.sel select { font: 600 13px var(--body); color: var(--paper); background: transparent; border: 0; padding: 5px 4px; min-height: 30px; }
+.sel select option { color: var(--ink); background: var(--paper); }
+
+/* 手機：頂列只留標題、俯瞰小圖示、兩個下拉選單；卡片改成底部抽屜 */
+@media (max-width: 720px) {
+  .bar { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding-top: calc(env(safe-area-inset-top, 0px) + 10px); }
+  .brand h1 { font-size: 21px; }
+  .brand p { display: none; }
+  .tools { display: contents; }
+  .overview { grid-column: 2; grid-row: 1; padding: 7px 9px; }
+  .ov-text { display: none; }
+  .daybox { display: none; }
+  .mobile-selects { display: flex; gap: 6px; grid-column: 1 / -1; grid-row: 2; }
+  #panel { top: auto; left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); width: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 58px); max-height: 52%; }
+  .p-head { padding: 12px 14px 10px; }
+  .p-head h2 { font-size: 21px; }
+  .p-head p { font-size: 13px; line-height: 1.6; }
+  .p-body { padding: 10px 14px 14px; }
+  .blds { grid-template-columns: 1fr 1fr; }
+  .zone-tag { font-size: 12px; padding: 2px 7px 3px; }
+  .zone-tag small { font-size: 10px; }
+  .zone-tag.sub { font-size: 11px; }
+  .agent-tag { font-size: 10px; padding: 1px 7px 2px; }
+  .agent-tag small { display: none; }
+  .bubble { font-size: 11px; max-width: 140px; }
+  .chip { font-size: 12px; padding: 6px 11px; }
+  #hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { #loading { transition: none; } }
+</style>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<div id="app">
+  <div id="stage"></div>
+  <header class="bar">
+    <div class="brand">
+      <h1>故事柑仔店島</h1>
+      <p>日落之後，語巫們在九座貨架島之間走動</p>
+    </div>
+    <div class="tools">
+    <button class="overview" type="button" id="overviewBtn" title="回到全島俯瞰（快捷鍵 H）" aria-label="回到全島俯瞰">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3 21 8v8l-9 5-9-5V8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 8v8M8 10l4 2 4-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="ov-text">全島俯瞰</span>
+    </button>
+    <!-- 手機版：時間與天氣改用下拉選單，省空間 -->
+    <div class="mobile-selects">
+      <label class="sel"><span>時間</span><select id="daySel" aria-label="時間">
+        <option value="auto">日夜流轉</option><option value="sunset">日落</option><option value="night">入夜</option>
+      </select></label>
+      <label class="sel"><span>天氣</span><select id="weatherSel" aria-label="天氣">
+        <option value="auto">自動</option><option value="clear">晴</option><option value="cloudy">多雲</option><option value="rain">下雨</option><option value="fog">起霧</option>
+      </select></label>
+    </div>
+    <div class="daybox" role="group" aria-label="時間">
+      <button type="button" data-day="auto" aria-pressed="true">日夜流轉</button>
+      <button type="button" data-day="sunset" aria-pressed="false">日落</button>
+      <button type="button" data-day="night" aria-pressed="false">入夜</button>
+    </div>
+    <div class="daybox" role="group" aria-label="天氣" id="weatherBox">
+      <button type="button" data-weather="auto" aria-pressed="true">天氣自動</button>
+      <button type="button" data-weather="clear" aria-pressed="false">晴</button>
+      <button type="button" data-weather="cloudy" aria-pressed="false">多雲</button>
+      <button type="button" data-weather="rain" aria-pressed="false">下雨</button>
+      <button type="button" data-weather="fog" aria-pressed="false">起霧</button>
+    </div>
+    </div>
+  </header>
+  <aside id="panel" hidden aria-live="polite"></aside>
+  <div id="hint">拖曳旋轉　滾輪縮放　點島嶼、語巫或柑仔店</div>
+  <nav class="zonebar" aria-label="分區"><div class="scroll" id="chips"></div></nav>
+  <div id="loading">柑仔店正在開門……</div>
+</div>
+
+<script type="module">
+import { start } from "./island.js";
+import { BASE } from "./island-config.js";
+
+const $ = (s, el = document) => el.querySelector(s);
+const panel = $("#panel");
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const link = (u) => BASE + u;
+let shopZone = null;
+
+function head(kicker, title, text, meta = "") {
+  return `<div class="p-head"><span class="p-kicker">${esc(kicker)}</span><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ""}${meta}
+    <button class="p-close" type="button" aria-label="關閉">×</button></div>`;
+}
+function open(html) {
+  panel.innerHTML = html;
+  panel.hidden = false;
+  ui.panelOpen = true;
+  $(".p-close", panel).onclick = close;
+}
+function close() {
+  panel.hidden = true;
+  ui.panelOpen = false;
+  ui.api?.closed();
+}
+function storyList(container, posts) {
+  const ul = document.createElement("ul");
+  ul.className = "list";
+  let shown = 0;
+  const more = document.createElement("button");
+  more.className = "more";
+  more.type = "button";
+  const render = () => {
+    const next = posts.slice(shown, shown + 40);
+    ul.insertAdjacentHTML("beforeend", next.map((p) => `<li><a href="${link(p.u)}" target="_blank" rel="noopener">
+      <span class="t">${esc(p.t)}</span><span class="d">${esc(p.d)}</span>${p.g ? `<span class="g">${esc(p.g)}</span>` : ""}</a></li>`).join(""));
+    shown += next.length;
+    more.hidden = shown >= posts.length;
+    more.textContent = `再看 ${Math.min(40, posts.length - shown)} 瓶`;
+  };
+  render();
+  container.replaceChildren(ul, more);
+  more.onclick = render;
+  if (!posts.length) container.innerHTML = `<p class="none" style="margin:0;font-size:13px;color:var(--muted)">沒有符合的故事。</p>`;
+}
+
+const ui = {
+  api: null,
+  onDayMode: null,
+  setNight(u) { document.documentElement.style.setProperty("--night", u.toFixed(2)); },
+  shopMoved(zone) {
+    shopZone = zone;
+    const where = $("#shop-where");
+    if (where) where.textContent = `停在${zone.name}`;
+    const live = $("[data-shop-live]", panel);
+    if (live && !panel.hidden) live.textContent = zone.name;
+  },
+  showZone(z, here, { open: openAgent, openBuilding }) {
+    open(head(z.parent ? `${z.parent}・區塊` : z.main ? `貨架分區・總建築 ${z.main.name}` : "貨架分區", z.name, z.main ? `${z.tagline}。${z.main.desc}` : z.tagline,
+      `<div class="p-meta"><span><b>${z.posts.length}</b> 瓶故事</span><a href="${link(z.page)}" target="_blank" rel="noopener" style="color:var(--red)">到這一區的貨架 ↗</a></div>`) +
+      `<div class="p-body">
+        ${z.sectors ? `<section class="p-sec"><h3>區塊</h3><div class="blds" id="secs"></div></section>` : ""}
+        ${z.buildings?.length ? `<section class="p-sec"><h3>${z.layout?.plan === "spiral" ? "地府旅程・依序走" : "這一區的地標"}</h3><div class="blds" id="blds"></div></section>
+        <section class="p-sec" id="subsSec"><h3>街坊與路標</h3><div class="subs" id="subs"></div></section>` : ""}
+        <section class="p-sec"><h3>現在在這一區</h3><div class="people" id="here"></div></section>
+        <section class="p-sec"><h3>系列</h3><div class="series" id="series"></div></section>
+        <section class="p-sec"><h3>故事瓶</h3><input class="search" id="q" type="search" placeholder="搜尋這一區的故事" aria-label="搜尋這一區的故事"><div id="stories" style="margin-top:6px"></div></section>
+      </div>`);
+    // 合併區：每個區塊一顆按鈕，點了飛過去並只看那一塊
+    [...(z.sectors || []), ...(z.towers || [])].forEach((s) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.innerHTML = `<span>${esc(s.name)}</span><small>${z.posts.filter((p) => (p.cats || [p.cat]).includes(s.cat)).length}</small>`;
+      b.onclick = () => ui.api.openSector(z.id, s.id);
+      $("#secs", panel).append(b);
+    });
+    const blds = z.buildings || [];
+    blds.filter((bd) => bd.tier === 1).sort((a, b) => (a.step || 99) - (b.step || 99)).forEach((bd) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.innerHTML = `<span>${esc(bd.label || bd.name)}</span><small>${bd.posts.length}</small>`;
+      b.onclick = () => openBuilding(bd);
+      $("#blds", panel).append(b);
+    });
+    const streets = new Map(); // 系列街坊與路標，依系列分組
+    blds.filter((bd) => bd.tier > 1).forEach((bd) => (streets.get(bd.series) || streets.set(bd.series, []).get(bd.series)).push(bd));
+    if (!streets.size && $("#subsSec", panel)) $("#subsSec", panel).hidden = true;
+    for (const [name, list] of streets) {
+      const box = document.createElement("div");
+      box.innerHTML = `<h4>${esc(name)}<small>${list.length} 篇</small></h4><div class="chips"></div>`;
+      list.forEach((bd) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = bd.name;
+        b.title = bd.name;
+        b.onclick = () => openBuilding(bd);
+        box.lastChild.append(b);
+      });
+      $("#subs", panel).append(box);
+    }
+    const hereEl = $("#here", panel);
+    if (here.length) here.forEach((a) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = a.kind === "shop" ? "故事柑仔店（本店）" : `${a.def.role || a.def.type}・${a.def.name}`;
+      if (a.kind === "resident") b.style.borderColor = "var(--line)";
+      b.onclick = () => openAgent(a);
+      hereEl.append(b);
+    });
+    else hereEl.innerHTML = `<span class="none">目前沒人經過，等一下再來看看。</span>`;
+
+    const counts = {};
+    z.posts.forEach((p) => p.g && (counts[p.g] = (counts[p.g] || 0) + 1));
+    let series = null;
+    const seriesEl = $("#series", panel);
+    const names = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    if (!names.length) seriesEl.closest(".p-sec").hidden = true;
+    const draw = () => {
+      const q = $("#q", panel).value.trim();
+      storyList($("#stories", panel), z.posts.filter((p) => (!series || p.g === series) && (!q || (p.t + (p.ex || "")).includes(q))));
+    };
+    names.forEach(([n, c]) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = `${n.replace("系列", "")} ${c}`;
+      b.setAttribute("aria-pressed", "false");
+      b.onclick = () => {
+        series = series === n ? null : n;
+        seriesEl.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b && series === n)));
+        draw();
+      };
+      seriesEl.append(b);
+    });
+    $("#q", panel).oninput = draw;
+    draw();
+  },
+  showAgent(def, zone, posts, kind, homeB, { openBuilding }) {
+    open(head(kind === "wizard" ? `語巫・${def.role}` : `居民・${def.type || ""}`, def.name, def.desc,
+      `<div class="p-meta"><span>現在在 <b>${esc(zone.name)}</b></span>${homeB ? `<span>住在 <b>${esc(homeB.name)}</b></span>` : ""}<span>出場 <b>${posts.length}</b> 瓶</span></div>`) +
+      `<div class="p-body">
+        <div class="actions">
+          ${def.page ? `<a class="btn" href="${link(def.page)}" target="_blank" rel="noopener">讀${esc(def.name)}的故事 ↗</a>` : ""}
+          ${homeB ? `<button class="btn ghost" type="button" id="goHome">去他住的${esc(homeB.name)}</button>` : ""}
+        </div>
+        <section class="p-sec"><h3>出場的故事</h3><div id="stories"></div></section>
+      </div>`);
+    if (homeB) $("#goHome", panel).onclick = () => openBuilding(homeB);
+    storyList($("#stories", panel), posts);
+  },
+  showBuilding(b, zone, residents, { open: openAgent, openZone }) {
+    open(head(`${zone.name}・${b.step ? `地府旅程第 ${b.step} 站` : b.series || "地標"}`, b.name, b.desc,
+      `<div class="p-meta"><span><b>${b.posts.length}</b> 瓶故事</span><span>住了 <b>${residents.length}</b> 位</span></div>`) +
+      `<div class="p-body">
+        ${b.posts[0] ? `<div class="actions"><a class="btn" href="${link(b.posts[0].u)}" target="_blank" rel="noopener">讀〈${esc(b.posts[0].t)}〉↗</a><button class="btn ghost" type="button" id="allZone">看${esc(zone.name)}全部</button></div>` : ""}
+        ${residents.length ? `<section class="p-sec"><h3>住在這裡</h3><div class="people" id="res"></div></section>` : ""}
+        <section class="p-sec"><h3>這裡的故事</h3><div id="stories"></div></section>
+      </div>`);
+    residents.forEach((a) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = `${a.def.type}・${a.def.name}`;
+      btn.onclick = () => openAgent(a);
+      $("#res", panel).append(btn);
+    });
+    const all = $("#allZone", panel);
+    if (all) all.onclick = () => openZone(zone.id);
+    storyList($("#stories", panel), b.posts);
+  },
+  showShop(def, zone, posts) {
+    open(head("本店", def.name, def.desc,
+      `<div class="p-meta"><span>今天停在 <b data-shop-live>${esc(zone.name)}</b></span><span>架上 <b>${posts.length}</b> 瓶故事</span></div>`) +
+      `<div class="p-body">
+        <div class="actions"><a class="btn" href="${link(def.page)}" target="_blank" rel="noopener">走進店裡 ↗</a><button class="btn ghost" type="button" id="drawBtn">抽一瓶</button></div>
+        <div id="drawn"></div>
+        <section class="p-sec"><h3>柑仔店會移動</h3><p style="margin:0;font-size:13px;line-height:1.7;color:#4a3d30">本店每過一陣子就沿著橋推到下一區，停一會兒再走。點下方的「故事柑仔店」可以隨時找到它。</p></section>
+      </div>`);
+    const drawOne = () => {
+      const p = posts[Math.floor(Math.random() * posts.length)];
+      $("#drawn", panel).innerHTML = `<div class="draw"><span class="p-kicker">${esc(p.cat)}</span><b>${esc(p.t)}</b><p>${esc((p.ex || "").slice(0, 90))}${(p.ex || "").length > 90 ? "……" : ""}</p><a href="${link(p.u)}" target="_blank" rel="noopener">讀這一瓶 ↗</a></div>`;
+    };
+    $("#drawBtn", panel).onclick = drawOne;
+  },
+};
+
+document.querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("[data-day]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  $("#daySel").value = b.dataset.day;
+  ui.onDayMode?.(b.dataset.day);
+}));
+document.querySelectorAll("[data-weather]").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("[data-weather]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  $("#weatherSel").value = b.dataset.weather;
+  ui.onWeather?.(b.dataset.weather);
+}));
+// 手機版的下拉選單，跟桌機的按鈕同步
+$("#daySel").addEventListener("change", (e) => {
+  document.querySelectorAll("[data-day]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.day === e.target.value)));
+  ui.onDayMode?.(e.target.value);
+});
+$("#weatherSel").addEventListener("change", (e) => {
+  document.querySelectorAll("[data-weather]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.weather === e.target.value)));
+  ui.onWeather?.(e.target.value);
+});
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !panel.hidden) close();
+  if ((e.key === "h" || e.key === "H") && !e.target.closest?.("input")) goOverview();
+});
+function goOverview() {
+  if (!panel.hidden) close();
+  ui.api?.overview();
+}
+$("#overviewBtn").onclick = goOverview;
+
+start({ stage: $("#stage"), ui }).then(() => {
+  const chips = $("#chips");
+  const shopChip = document.createElement("button");
+  shopChip.className = "chip shop";
+  shopChip.type = "button";
+  shopChip.innerHTML = `故事柑仔店<span class="where" id="shop-where">${shopZone ? "停在" + esc(shopZone.name) : ""}</span>`;
+  shopChip.onclick = () => ui.api.openShop();
+  chips.append(shopChip);
+  const all = document.createElement("button");
+  all.className = "chip";
+  all.type = "button";
+  all.textContent = "全島";
+  all.onclick = () => { close(); ui.api.overview(); };
+  chips.append(all);
+  const chip = (text, onclick, sub = false) => {
+    const c = document.createElement("button");
+    c.className = sub ? "chip sub" : "chip";
+    c.type = "button";
+    c.textContent = text;
+    c.onclick = onclick;
+    chips.append(c);
+  };
+  ui.api.zones.forEach((z) => {
+    chip(z.name, () => ui.api.openZone(z.id));
+    // 合併區後面接各區塊的按鈕，網站原本的分區都還找得到
+    [...(z.sectors || []), ...(z.towers || [])].forEach((s) => chip(s.name, () => ui.api.openSector(z.id, s.id), true));
+  });
+  $("#loading").classList.add("done");
+  setTimeout(() => ($("#loading").hidden = true), 900); // 淡出後整個拿掉，慢的手機也不會卡著一層
+}).catch((err) => {
+  console.error(err);
+  $("#loading").textContent = "島嶼載入失敗，請重新整理頁面。";
+});
+</script>
