@@ -19,6 +19,7 @@ import { YOYO_BUILDERS, YOYO_TEMPLATES, YOYO_DECOR } from "./buildings-yoyo.js";
 import { LAOBAN_BUILDERS, LAOBAN_TEMPLATES, LAOBAN_DECOR } from "./buildings-laoban.js";
 import { createWeather, createSeaLife } from "./weather.js";
 import { buildMountains, buildIslets, buildBottles } from "./scenery.js";
+import { createSoundscape } from "./sound.js";
 
 const ALL_BUILDERS = [BUILDERS, TOWN_BUILDERS, SHEN_BUILDERS, YAO_BUILDERS, YOYO_BUILDERS, LAOBAN_BUILDERS];
 const ALL_TEMPLATES = [TEMPLATES, TOWN_TEMPLATES, SHEN_TEMPLATES, YAO_TEMPLATES, YOYO_TEMPLATES, LAOBAN_TEMPLATES];
@@ -1406,8 +1407,13 @@ export async function start({ stage, ui }) {
     return [...people, ...stories].slice(0, 30);
   }
 
+  // 島上的聲音（讀者按下聲音按鈕才開始）
+  const sound = createSoundscape(), near = {};
+  const clamp01 = (v) => Math.min(1, Math.max(0, v));
+  const zd = (z) => 18 + z.r * 1.35;
+  document.addEventListener("visibilitychange", () => sound.pause(document.hidden));
   ui.api = {
-    find, openBuilding, neon: ZONE_NEON,
+    find, openBuilding, neon: ZONE_NEON, sound,
     openZone, openSector, openShop: () => openAgent(shop),
     closed: () => { follow = null; },
     // 全島俯瞰：回到開場的角度與距離
@@ -1462,6 +1468,11 @@ export async function start({ stage, ui }) {
     sea.update(dt, elapsed, w, controls.target, night);
     nightRef.v = night;
     bottles.update(elapsed, dt);
+    if (sound.on) { // 聲音：鏡頭拉多遠、看著哪座島
+      const cd = camera.position.distanceTo(controls.target), ov = overviewDist();
+      for (const z of zones.values()) near[z.id] = clamp01(1 - (Math.hypot(controls.target.x - z.pos[0], controls.target.z - z.pos[1]) - z.r * 0.6) / 14) * clamp01((zd(z) * 1.8 - cd) / (zd(z) * 0.7)); // 點開那座島時的鏡頭距離（18 + r×1.35）以內最清楚
+      sound.update({ t: elapsed, dt: realDt, night, w, zoomOut: clamp01((cd - 30) / (ov - 30)), near });
+    }
 
     agents.forEach((a) => updateAgent(a, dt));
     anim.forEach((fn) => fn(elapsed, dt));

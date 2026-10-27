@@ -31,7 +31,7 @@ body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var
 
 /* 頂列 */
 .bar {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+  position: absolute; top: 0; left: 0; right: 0; z-index: 7; /* 比卡片高：氛圍、搜尋的下拉才不會被卡片蓋住 */
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -230,6 +230,16 @@ body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var
 .mood-row { display: grid; gap: 6px; }
 .mood-row > span { font: 600 11px var(--body); letter-spacing: .12em; color: rgba(251,241,220,.65); }
 .mood-pop .daybox { background: rgba(255,255,255,.06); }
+.mood-pop { width: max-content; }
+.mood-pop .daybox button { white-space: nowrap; }
+/* 聲音按鈕：關著是斜線喇叭，開著聲波會亮 */
+.snd { display: grid; place-items: center; padding: 0; }
+.snd .on-ic { display: none; }
+.snd[aria-pressed="true"] { border-color: var(--orange); color: var(--orange); }
+.snd[aria-pressed="true"] .on-ic { display: block; }
+.snd[aria-pressed="true"] .off-ic { display: none; }
+.vol { display: flex; align-items: center; gap: 8px; color: var(--paper); font: 600 12px var(--body); }
+.vol input { flex: 1; accent-color: var(--orange); }
 /* 故事目錄：六座島依序排，每座可以展開看地標 */
 .idx { list-style: none; margin: 0; padding: 0; display: grid; }
 .idx > li { border-bottom: 1px solid var(--line); }
@@ -272,10 +282,11 @@ body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var
   .zone-sign.sub b { font-size: 11px; }
   .brand p { display: none; }
   .tools { display: contents; }
-  .bar { grid-template-columns: 1fr auto auto auto; }
+  .bar { grid-template-columns: 1fr auto auto auto auto; gap: 8px 6px; }
   .help { grid-column: 2; grid-row: 1; }
-  .overview { grid-column: 3; grid-row: 1; padding: 7px 9px; }
-  .mood { grid-column: 4; grid-row: 1; }
+  .help.snd { grid-column: 3; }
+  .overview { grid-column: 4; grid-row: 1; padding: 7px 9px; }
+  .mood { grid-column: 5; grid-row: 1; }
   .mood-btn { padding: 8px 9px; }
   .mood-text { display: none; }
   .finder { grid-column: 1 / -1; grid-row: 2; margin-left: 0; }
@@ -322,6 +333,9 @@ body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var
     </div>
     <div class="tools">
     <button class="help" type="button" id="helpBtn" title="怎麼逛這座島" aria-label="怎麼逛這座島">?</button>
+    <button class="help snd" type="button" id="soundBtn" aria-pressed="false" title="打開島上的聲音" aria-label="島上的聲音">
+      <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path class="off-ic" d="m16 9 5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="on-ic" d="M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
     <button class="overview" type="button" id="overviewBtn" title="回到全島俯瞰（快捷鍵 H）" aria-label="回到全島俯瞰">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3 21 8v8l-9 5-9-5V8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 8v8M8 10l4 2 4-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <span class="ov-text">全島俯瞰</span>
@@ -348,6 +362,9 @@ body { margin: 0; background: var(--dusk); color: var(--paper); font-family: var
             <button type="button" data-weather="rain" aria-pressed="false">下雨</button>
             <button type="button" data-weather="fog" aria-pressed="false">起霧</button>
           </div>
+        </div>
+        <div class="mood-row"><span>聲音</span>
+          <label class="vol">小<input id="volRange" type="range" min="0" max="100" value="70" aria-label="音量">大</label>
         </div>
       </div>
     </div>
@@ -768,5 +785,40 @@ function closeGuide() {
 $("#guideOk").onclick = closeGuide;
 $("#guide").addEventListener("click", (e) => e.target.id === "guide" && closeGuide());
 $("#helpBtn").onclick = showGuide;
+
+// ---- 聲音：瀏覽器規定要使用者點過才能出聲。上次開著的話，這次第一次點畫面就接著播 ----
+const soundBtn = $("#soundBtn"), volRange = $("#volRange");
+let soundPref = { on: false, vol: 0.7 };
+try { Object.assign(soundPref, JSON.parse(localStorage.getItem("story-island-sound") || "{}")); } catch {}
+volRange.value = Math.round(soundPref.vol * 100);
+const saveSound = () => { try { localStorage.setItem("story-island-sound", JSON.stringify(soundPref)); } catch {} };
+function setSound(on) {
+  const snd = ui.api?.sound;
+  if (!snd) return;
+  soundPref.on = on;
+  snd.setVolume(soundPref.vol);
+  snd.enable(on);
+  soundBtn.setAttribute("aria-pressed", String(on));
+  soundBtn.title = on ? "關掉聲音" : "打開島上的聲音";
+  saveSound();
+}
+soundBtn.onclick = () => setSound(!soundPref.on);
+volRange.oninput = () => {
+  soundPref.vol = volRange.value / 100;
+  ui.api?.sound.setVolume(soundPref.vol);
+  if (!soundPref.on && soundPref.vol > 0) setSound(true); // 拉音量就當作要聽
+  saveSound();
+};
+if (soundPref.on) {
+  soundBtn.setAttribute("aria-pressed", "true");
+  const resume = (e) => {
+    removeEventListener("pointerdown", resume, true);
+    removeEventListener("keydown", resume, true);
+    if (e.target.closest?.("#soundBtn")) return; // 第一下就是按亮著的聲音鈕＝想關掉，交給按鈕自己切換
+    if (soundPref.on && ui.api?.sound && !ui.api.sound.on) setSound(true);
+  };
+  addEventListener("pointerdown", resume, true);
+  addEventListener("keydown", resume, true);
+}
 addEventListener("keydown", (e) => e.key === "Escape" && !$("#guide").hidden && closeGuide());
 </script>
